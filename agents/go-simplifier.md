@@ -16,10 +16,13 @@ When invoked:
 Two modes:
 
 1. **Default (no args)**: Find Go files changed on the current branch:
+
    ```bash
    git diff --name-only @{upstream}...HEAD -- '*.go'
    ```
+
    If `@{upstream}` fails (no tracking branch), fall back to:
+
    ```bash
    git diff --name-only main...HEAD -- '*.go'
    ```
@@ -27,6 +30,7 @@ Two modes:
 2. **Specified paths**: Glob expand the provided paths to `.go` files.
 
 **Exclude generated files** from the target list:
+
 - `*.pb.go`, `*_grpc.pb.go`, `*.pb.gw.go`
 - `generated.go`, `models_gen.go`
 - `**/ent/*.go`
@@ -56,6 +60,7 @@ Filter the output to only include diagnostics for target files (ignore diagnosti
 Read target files. Check for simplification opportunities:
 
 **Layer 2 (Structural):**
+
 - Happy path not left-aligned (error flow not indented)
 - Functions >50 lines
 - Nesting >4 levels deep
@@ -65,6 +70,7 @@ Read target files. Check for simplification opportunities:
 - `ctx context.Context` not first parameter
 
 **Layer 3 (Architectural):**
+
 - Files >800 lines
 - Interface with only one implementation
 - Global mutable state (should use dependency injection)
@@ -73,7 +79,7 @@ Read target files. Check for simplification opportunities:
 
 Present a numbered summary:
 
-```
+```text
 Simplification opportunities found:
 
 STRUCTURAL (N):

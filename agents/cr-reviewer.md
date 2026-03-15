@@ -16,16 +16,19 @@ Run `git status --porcelain` to check for uncommitted changes.
 Three states, checked in order:
 
 1. **Has uncommitted changes** (output is non-empty):
+
    ```bash
    cr review --prompt-only --no-color --type uncommitted
    ```
 
 2. **No uncommitted changes, PR exists** (`gh pr view --json baseRefName -q .baseRefName` succeeds):
+
    ```bash
    cr review --prompt-only --no-color --base <base-branch>
    ```
 
 3. **No uncommitted changes, no PR** (`gh pr view` fails):
+
    ```bash
    cr review --prompt-only --no-color --base main
    ```
@@ -43,7 +46,7 @@ Execute the selected command and capture full output. Handle failures:
 
 The `--prompt-only` output is raw analysis text. Read the output and categorize findings by severity. Present a numbered summary to the user:
 
-```
+```text
 CodeRabbit found N issues:
 
 CRITICAL (X):
@@ -64,6 +67,7 @@ If CodeRabbit finds no issues, report "No issues found" and stop.
 ## Step 4 -- Fix after user confirmation
 
 Based on the user's selection:
+
 - Read the relevant source files
 - Apply fixes one by one
 - Briefly explain each change after applying it

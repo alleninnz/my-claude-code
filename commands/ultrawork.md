@@ -32,7 +32,7 @@ Group subtasks into:
 
 Present the execution plan before dispatching:
 
-```
+```text
 Ultrawork plan (N tasks):
 
 PARALLEL:
@@ -104,7 +104,7 @@ If any subagent failed, report the failure and suggest next steps. Do not retry 
 
 **Good**: Three independent tasks fired simultaneously
 
-```
+```text
 Agent(subagent_type="executor", model="opus", description="Implement auth endpoint", prompt="...")
 Agent(subagent_type="executor", model="sonnet", description="Add validation tests", prompt="...")
 Agent(subagent_type="executor", model="sonnet", description="Update API docs", prompt="...")
@@ -112,14 +112,14 @@ Agent(subagent_type="executor", model="sonnet", description="Update API docs", p
 
 **Good**: Background execution for long operations
 
-```
+```text
 Agent(subagent_type="executor", model="sonnet", description="Run test suite", prompt="...", run_in_background=true)
 Agent(subagent_type="executor", model="sonnet", description="Update changelog", prompt="...")
 ```
 
 **Bad**: Sequential execution of independent work
 
-```
+```text
 result1 = Agent(executor, "Implement endpoint")  # wait...
 result2 = Agent(executor, "Add tests")            # wait...
 result3 = Agent(executor, "Update docs")           # wait...
@@ -127,7 +127,7 @@ result3 = Agent(executor, "Update docs")           # wait...
 
 **Bad**: Using opus for trivial work
 
-```
+```text
 Agent(subagent_type="executor", model="opus", prompt="Fix a typo in README")
 ```
 
