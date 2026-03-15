@@ -19,6 +19,7 @@ Command → Agent → Skill → superpowers discipline
 /e2e       → e2e-runner        → e2e-testing
 /cr-review → cr-reviewer       → (none)
 /go-simplify → go-simplifier     → golang-patterns → (none)
+/ultrawork   → (main context)       → (none)
 ```
 
 Commands, agents, and skills cross-reference superpowers via `**REQUIRED BACKGROUND:**` markers (soft dependency — works without superpowers).
@@ -29,7 +30,7 @@ Commands, agents, and skills cross-reference superpowers via `**REQUIRED BACKGRO
 |------|-------|
 | Agents (5) | go-reviewer, go-build-resolver, e2e-runner, cr-reviewer, go-simplifier |
 | Skills (6) | golang-patterns, api-design, mysql-aurora-patterns, e2e-testing, article-writing, agentic-engineering |
-| Commands (6) | /go-build, /go-review, /go-test, /e2e, /cr-review, /go-simplify |
+| Commands (7) | /go-build, /go-review, /go-test, /e2e, /cr-review, /go-simplify, /ultrawork |
 | Rules (5) | Go-scoped: coding-style, testing, security, patterns, hooks |
 | Hooks (2) | pre-commit Go/proto format, generated file guard |
 | Contexts (3) | dev, research, review |

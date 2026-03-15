@@ -15,7 +15,7 @@ Claude Code plugin for Go development. Agents, skills, commands, rules, and hook
 |------|-------|
 | Agents (5) | go-reviewer, go-build-resolver, e2e-runner, cr-reviewer, go-simplifier |
 | Skills (6) | golang-patterns, api-design, mysql-aurora-patterns, e2e-testing, article-writing, agentic-engineering |
-| Commands (6) | /go-build, /go-review, /go-test, /e2e, /cr-review, /go-simplify |
+| Commands (7) | /go-build, /go-review, /go-test, /e2e, /cr-review, /go-simplify, /ultrawork |
 | Rules (5) | Go-scoped: coding-style, testing, security, patterns, hooks |
 | Hooks (2) | pre-commit Go/proto format, generated file guard |
 | Contexts (3) | dev, research, review |
