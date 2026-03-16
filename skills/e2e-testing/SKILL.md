@@ -1,7 +1,7 @@
 ---
 name: e2e-testing
 description: Use when writing Playwright e2e tests — covers page object model, test configuration, flaky test handling, and CI/CD integration.
-origin: my-claude-code
+origin: everything-claude-code
 ---
 
 # E2E Testing Patterns

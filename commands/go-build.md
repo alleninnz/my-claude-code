@@ -149,8 +149,6 @@ ok      project/internal/handler   0.023s
 
 Build Status: ✅ SUCCESS
 
-```text
-
 ## Common Errors Fixed
 
 | Error | Typical Fix |
@@ -174,6 +172,7 @@ Build Status: ✅ SUCCESS
 ## Stop Conditions
 
 The agent will stop and report if:
+
 - Same error persists after 3 attempts
 - Fix introduces more errors
 - Requires architectural changes

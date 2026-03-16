@@ -37,7 +37,7 @@ Review Go code for security vulnerabilities, concurrency bugs, error handling is
 
 ### TDD Workflow
 
-`/go-test` → inline TDD cycle → `golang-patterns` skill
+`/go-test` → inline TDD cycle → `golang-testing` skill
 
 Enforces RED-GREEN-REFACTOR: define types → write table-driven tests → verify failure → implement minimal code → verify pass → check coverage (target 80%+).
 
@@ -100,24 +100,13 @@ Three switchable modes: `dev` (code first), `research` (explore first), `review`
 
 Soft dependency — everything works without superpowers, but it adds workflow discipline.
 
-### Marker Types
-
-- **`REQUIRED SUB-SKILL`** — invoke the superpowers workflow at runtime
-- **`REQUIRED BACKGROUND`** — internalize the philosophy, don't invoke
-
-Selection rule: use SUB-SKILL only when (1) the skill's workflow is isomorphic with the command's main flow AND (2) invoking it preserves domain-specific capabilities. Otherwise use BACKGROUND.
-
-Example: `/go-review` uses BACKGROUND because `requesting-code-review` would dispatch a generic reviewer, bypassing `go-reviewer` and `golang-patterns`.
-
-### Layer Rules
-
-Commands may use either marker. Agents and skills use BACKGROUND only.
+All cross-references use `**REQUIRED BACKGROUND:**` — commands, agents, and skills internalize superpowers philosophy without invoking it at runtime. This preserves Go-specific capabilities (agents, skills) while gaining workflow discipline.
 
 ### Current Mappings
 
 | Component | Marker | superpowers skill |
 | --- | --- | --- |
-| /go-test | SUB-SKILL | test-driven-development |
+| /go-test | BACKGROUND | test-driven-development |
 | /go-review | BACKGROUND | requesting-code-review |
 | /go-build, go-build-resolver | BACKGROUND | systematic-debugging |
 | go-reviewer, e2e-runner | BACKGROUND | verification-before-completion |

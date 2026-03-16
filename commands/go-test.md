@@ -2,9 +2,7 @@
 description: Use when writing new Go code that needs tests, adding test coverage to existing Go code, or starting a Go implementation task with test-driven development.
 ---
 
-**REQUIRED SUB-SKILL:** superpowers:test-driven-development — enforce RED-GREEN-REFACTOR cycle with anti-rationalization gates
-
-> **Fallback:** If superpowers is not available, use the built-in TDD workflow below.
+**REQUIRED BACKGROUND:** superpowers:test-driven-development — enforce RED-GREEN-REFACTOR discipline with anti-rationalization gates
 
 # Go TDD Command
 
@@ -174,105 +172,16 @@ ok      project/validator    0.003s
 ## TDD Complete!
 ````
 
-## Test Patterns
-
-### Table-Driven Tests
-
-```go
-tests := []struct {
-    name     string
-    input    InputType
-    want     OutputType
-    wantErr  bool
-}{
-    {"case 1", input1, want1, false},
-    {"case 2", input2, want2, true},
-}
-
-for _, tt := range tests {
-    t.Run(tt.name, func(t *testing.T) {
-        got, err := Function(tt.input)
-        // assertions
-    })
-}
-```
-
-### Parallel Tests
-
-```go
-for _, tt := range tests {
-    tt := tt // Capture
-    t.Run(tt.name, func(t *testing.T) {
-        t.Parallel()
-        // test body
-    })
-}
-```
-
-### Test Helpers
-
-```go
-func setupTestDB(t *testing.T) *sql.DB {
-    t.Helper()
-    db := createDB()
-    t.Cleanup(func() { db.Close() })
-    return db
-}
-```
-
-## Coverage Commands
-
-```bash
-# Basic coverage
-go test -cover ./...
-
-# Coverage profile
-go test -coverprofile=coverage.out ./...
-
-# View in browser
-go tool cover -html=coverage.out
-
-# Coverage by function
-go tool cover -func=coverage.out
-
-# With race detection
-go test -race -cover ./...
-```
-
-## Coverage Targets
-
-| Code Type | Target |
-|-----------|--------|
-| Critical business logic | 100% |
-| Public APIs | 90%+ |
-| General code | 80%+ |
-| Generated code | Exclude |
-
-## TDD Best Practices
-
-**DO:**
-
-- Write test FIRST, before any implementation
-- Run tests after each change
-- Use table-driven tests for comprehensive coverage
-- Test behavior, not implementation details
-- Include edge cases (empty, nil, max values)
-
-**DON'T:**
-
-- Write implementation before tests
-- Skip the RED phase
-- Test private functions directly
-- Use `time.Sleep` in tests
-- Ignore flaky tests
+For Go testing patterns, coverage commands, benchmarks, and fuzzing, see skill: `golang-testing`.
 
 ## Related Commands
 
 - `/go-build` - Fix build errors
 - `/go-review` - Review code after implementation
-- `/verify` - Run full verification loop
+- `/go-simplify` - Simplify code after implementation
 
 ## Related
 
+- Skill: `skills/golang-testing/`
 - Command: `/go-build` - Fix build errors
 - Command: `/go-review` - Review code after implementation
