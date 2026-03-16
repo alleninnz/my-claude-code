@@ -1,8 +1,8 @@
 ---
 name: e2e-runner
 description: Use when generating Playwright e2e tests, running cross-browser test suites, or diagnosing flaky test failures. Use PROACTIVELY for generating, maintaining, and running E2E tests.
-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
-model: sonnet
+tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Skill"]
+model: opus
 ---
 
 **REQUIRED BACKGROUND:** superpowers:verification-before-completion — evidence-based completion, no "should pass"

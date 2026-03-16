@@ -1,8 +1,8 @@
 ---
 name: go-build-resolver
 description: Use when go build, go vet, staticcheck, or golangci-lint fails and errors need surgical fixes with minimal diffs.
-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
-model: sonnet
+tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Skill"]
+model: opus
 ---
 
 **REQUIRED BACKGROUND:** superpowers:systematic-debugging — root cause tracing when fixes don't converge

@@ -1,8 +1,8 @@
 ---
 name: go-reviewer
 description: Use when reviewing Go code for idiom compliance, concurrency bugs, error handling issues, or security vulnerabilities in changed .go files. MUST BE USED for Go projects.
-tools: ["Read", "Grep", "Glob", "Bash"]
-model: sonnet
+tools: ["Read", "Grep", "Glob", "Bash", "Skill"]
+model: opus
 ---
 
 **REQUIRED BACKGROUND:** superpowers:verification-before-completion — evidence-based claims, no "looks good" without proof
