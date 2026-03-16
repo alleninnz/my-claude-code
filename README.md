@@ -122,7 +122,7 @@ Commands may use either marker. Agents and skills use BACKGROUND only.
 | /go-build, go-build-resolver | BACKGROUND | systematic-debugging |
 | go-reviewer, e2e-runner | BACKGROUND | verification-before-completion |
 | golang-patterns, api-design | BACKGROUND | verification-before-completion |
-| agentic-engineering | BACKGROUND | dispatching-parallel-agents |
+| /ultrawork, agentic-engineering | BACKGROUND | dispatching-parallel-agents |
 
 ## License
 

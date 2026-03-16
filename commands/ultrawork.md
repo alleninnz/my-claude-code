@@ -4,6 +4,8 @@ description: Use when you want to execute multiple independent tasks in parallel
   appropriate model tiers, and dispatches simultaneously.
 ---
 
+**REQUIRED BACKGROUND:** superpowers:dispatching-parallel-agents — judgment framework for when NOT to parallelize
+
 # Ultrawork
 
 Parallel execution engine. Decompose tasks, route to model tiers, dispatch simultaneously.

@@ -19,7 +19,7 @@ Command → Agent → Skill → superpowers discipline
 /e2e       → e2e-runner        → e2e-testing
 /cr-review → cr-reviewer       → (none)
 /go-simplify → go-simplifier     → golang-patterns → (none)
-/ultrawork   → (main context)       → (none)
+/ultrawork   → (main context)       → dispatching-parallel-agents
 ```
 
 Commands cross-reference superpowers via `**REQUIRED SUB-SKILL:**` (invoke workflow) or `**REQUIRED BACKGROUND:**` (understand philosophy) markers. Agents and skills use `**REQUIRED BACKGROUND:**` only. All markers are soft dependencies — works without superpowers.
