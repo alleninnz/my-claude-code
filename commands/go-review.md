@@ -2,7 +2,7 @@
 description: Use when reviewing Go code changes, after completing a Go implementation task, before merging Go PRs, or when checking for Go-specific security and concurrency issues. Invokes the go-reviewer agent.
 ---
 
-**REQUIRED BACKGROUND:** superpowers:requesting-code-review — standardized review template with BASE_SHA/HEAD_SHA and severity categories
+**REQUIRED BACKGROUND:** superpowers:requesting-code-review — severity framework and BASE_SHA/HEAD_SHA approach for structured review
 
 # Go Code Review
 

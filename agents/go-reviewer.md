@@ -5,7 +5,7 @@ tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 ---
 
-**REQUIRED BACKGROUND:** superpowers:requesting-code-review — standardized review template and severity framework
+**REQUIRED BACKGROUND:** superpowers:verification-before-completion — evidence-based claims, no "looks good" without proof
 
 You are a senior Go code reviewer ensuring high standards of idiomatic Go and best practices.
 

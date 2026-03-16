@@ -2,7 +2,9 @@
 description: Use when writing new Go code that needs tests, adding test coverage to existing Go code, or starting a Go implementation task with test-driven development.
 ---
 
-**REQUIRED BACKGROUND:** superpowers:test-driven-development — strict RED-GREEN-REFACTOR discipline with anti-rationalization gates
+**REQUIRED SUB-SKILL:** superpowers:test-driven-development — enforce RED-GREEN-REFACTOR cycle with anti-rationalization gates
+
+> **Fallback:** If superpowers is not available, use the built-in TDD workflow below.
 
 # Go TDD Command
 
