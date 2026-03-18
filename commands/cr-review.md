@@ -7,6 +7,10 @@ description: Use when running CodeRabbit CLI to review code changes before push.
 
 This command invokes the **cr-reviewer** agent to run CodeRabbit CLI as an independent AI code reviewer.
 
+## Agent Dispatch
+
+When spawning the cr-reviewer agent, you MUST set `model: "opus"`. CodeRabbit output analysis requires Opus-level reasoning to correctly categorize severity and propose fixes.
+
 ## What This Command Does
 
 1. **Auto-detect scope**: Checks for uncommitted changes or falls back to PR diff
