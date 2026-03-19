@@ -45,9 +45,33 @@ gh api repos/{owner}/{repo}/issues/{number}/comments \
 - Skip issue comments that are purely summaries with no actionable findings (e.g. CodeRabbit summary tables)
 - If no actionable AI reviewer comments found, report "No AI review comments found" and stop
 
+## Step 2.5 — Partition outdated comments
+
+Review comments where `line` is `null` are outdated — GitHub marks them this way when the diff context no longer exists after subsequent pushes.
+
+Split review comments into two groups:
+- **Outdated:** `line` is `null`
+- **Active:** `line` is not `null`
+
+Issue comments (PR-level) are always active — they have no diff position.
+
+If outdated comments exist, present them as a batch before the interactive loop:
+
+```
+── N outdated comment(s) (auto-skipped) ──────────
+1. [bot-name] path/to/file.go — <one-line plain-language summary of the concern>
+2. [bot-name] path/to/other.go — <one-line plain-language summary>
+
+Proceeding with M remaining comment(s)...
+```
+
+The one-line summary is derived from the comment body — translate to plain language, same as the interactive comments, but condensed to one line.
+
+If all comments are outdated (M=0), display the batch summary, report "No active comments to review", and proceed directly to Step 5.
+
 ## Step 3 — Interactive per-comment review
 
-For each comment:
+For each active (non-outdated) comment:
 
 1. Read the referenced file/line (review comments) or identify relevant code (issue comments)
 2. If file was deleted/renamed, check `git log --diff-filter=R --find-renames -- {path}`
@@ -82,7 +106,7 @@ What would you like to do? (fix / skip / discuss)
 - **skip** — Next comment.
 - **discuss** — User disagrees, asks questions, or gives custom fix instructions. After resolution, return to fix/skip.
 
-After all comments: show summary (`Fix: X, Skip: Y`).
+After all comments: show summary (`Fix: X, Skip: Y, Outdated: Z`).
 
 ## Step 4 — Apply queued fixes
 
@@ -100,9 +124,12 @@ If **no**: done.
 
 If **yes**: read `resolve-threads.md` in this skill directory for the API commands to reply to comments and resolve review threads via GraphQL.
 
+Outdated comments are included in thread resolution. No reply is posted for outdated comments — same treatment as skipped.
+
 ## Common mistakes
 
 - **Echoing the AI text verbatim** — The whole point is to translate into plain language. Summarize what the reviewer wants, don't paste their output.
 - **Committing or pushing** — Never. The user handles git workflow after fixes are applied.
 - **Processing Copilot or human comments** — Only bot reviewers excluding `Copilot`. Filter is in the jq query.
 - **Fixing without queuing first** — Go through ALL comments before applying any fixes.
+- **Presenting outdated comments interactively** — Comments with `line: null` are outdated. Batch them in Step 2.5, don't walk through them one-by-one.
