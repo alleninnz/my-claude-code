@@ -36,7 +36,6 @@ my-claude-code skills load first (domain knowledge), then superpowers skills (pr
 | Commands (5) | /go-build, /go-review, /go-test, /e2e, /go-simplify |
 | Rules (5) | Go-scoped: coding-style, testing, security, patterns, hooks |
 | Hooks (2) | pre-commit Go/proto format, generated file guard |
-| Contexts (3) | dev (code first), research (explore first), review (read-only) |
 
 ## Hooks
 
