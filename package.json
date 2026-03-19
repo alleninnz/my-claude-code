@@ -1,6 +1,20 @@
 {
   "name": "my-claude-code",
   "private": true,
-  "description": "Personal Claude Code plugin — Go/TS agents, skills, rules, and hooks for Claude Code",
+  "description": "Claude Code plugin for Go development — agents, skills, commands, rules, and hooks. Integrates with superpowers for workflow discipline.",
+  "keywords": [
+    "claude-code-plugin",
+    "golang",
+    "go",
+    "agents",
+    "skills",
+    "commands",
+    "hooks",
+    "rules",
+    "code-review",
+    "tdd",
+    "e2e-testing",
+    "coderabbit"
+  ],
   "license": "MIT"
 }
