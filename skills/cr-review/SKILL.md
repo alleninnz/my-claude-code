@@ -37,11 +37,17 @@ CodeRabbit found N issues:
 CRITICAL (X):
 1. [file:line] description
 
+<code snippet, 3-5 lines, with language-appropriate syntax highlighting>
+
 HIGH (X):
 2. [file:line] description
 
+<code snippet, 3-5 lines, with language-appropriate syntax highlighting>
+
 MEDIUM (X):
 3. [file:line] description
+
+<code snippet, 3-5 lines, with language-appropriate syntax highlighting>
 
 Which issues to fix? (all / 1,2,3 / none):
 ```
