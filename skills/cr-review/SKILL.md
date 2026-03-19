@@ -36,21 +36,26 @@ CodeRabbit found N issues:
 
 CRITICAL (X):
 1. [file:line] description
+   <relevant code snippet from the flagged location>
 
 <code snippet, 3-5 lines, with language-appropriate syntax highlighting>
 
 HIGH (X):
 2. [file:line] description
+   <relevant code snippet>
 
 <code snippet, 3-5 lines, with language-appropriate syntax highlighting>
 
 MEDIUM (X):
 3. [file:line] description
+   <relevant code snippet>
 
 <code snippet, 3-5 lines, with language-appropriate syntax highlighting>
 
 Which issues to fix? (all / 1,2,3 / none):
 ```
+
+For each issue, read the file and include a short code snippet (the flagged lines ± a few lines of context) so the user can judge without switching to their editor.
 
 If no issues found, report and stop.
 
