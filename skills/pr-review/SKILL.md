@@ -142,84 +142,7 @@ Split into two queues:
 
 For each Critical/Major comment (or deduplicated group), perform deep analysis before presentation.
 
-### Deep analysis (per comment, not batch)
-
-Before presenting each comment, gather three inputs:
-
-1. **git diff** — run `git diff $(gh pr view --json baseRefName -q .baseRefName)...HEAD -- {path}` to get the PR's changes for the file, focused on the comment's location
-2. **Function-level context** — read the full function/method containing the flagged line (not the entire file)
-3. **Project conventions** — check CLAUDE.md, linter config, and surrounding code patterns for relevant conventions
-
-For PR-level issue comments (no file path): use the PR description and overall diff summary instead of file-specific diff and function context.
-
-If a file was deleted/renamed, check `git log --diff-filter=R --find-renames -- {path}`.
-
-### Severity re-evaluation
-
-After deep analysis, Claude may upgrade or downgrade the comment's severity:
-
-- If downgraded below Major → move to Medium/Low overview list (Step 3B), do not present interactively. Retain the gathered deep analysis context — if the user rescues this comment in Step 3B, reuse it instead of re-reading files
-- If upgraded → reflect in display header (e.g., `[Medium → Critical]`)
-- If all Critical/Major comments are downgraded during deep analysis, skip Step 3A interaction entirely and proceed to Step 3B with all comments
-
-### Presentation template
-
-For single comments:
-
-```text
-── 1/N ── [Critical] ── [coderabbit] ──────────
-📍 path/to/file.go:42
-
-**Diff:**
-<git diff snippet, only the change related to this comment, ±3 lines context>
-
-**Analysis:**
-<2-3 sentences: what the reviewer flagged, why it matters (or doesn't),
-impact on current code. If Claude disagrees with reviewer, state the
-disagreement and reasoning explicitly.>
-
-**Recommendation:** Fix / Skip
-<1-sentence rationale>
-
-<details><summary>Original comment</summary>
-<raw reviewer text>
-</details>
-```
-
-Then prompt the user with `AskUserQuestion` using selectable options: `["Fix", "Skip", "Discuss"]`. If the user selects "Discuss", follow up with a freeform `AskUserQuestion` to get their input.
-
-For deduplicated groups:
-
-```text
-── 1/N ── [Major] ── 2 comments grouped ──────
-📍 path/to/file.go:42 (coderabbit, copilot)
-
-**Diff:**
-<shared diff snippet>
-
-**Analysis:**
-<merged analysis, noting each reviewer's angle if different>
-
-**Recommendation:** Fix / Skip
-<rationale>
-
-<details><summary>Original comments (2)</summary>
-[coderabbit] ...
-[copilot] ...
-</details>
-```
-
-Same `AskUserQuestion` with `["Fix", "Skip", "Discuss"]` options.
-
-Omit `📍` and `**Diff:**` for PR-level issue comments.
-
-### User responses
-
-Use `AskUserQuestion` with `options: ["Fix", "Skip", "Discuss"]` for each comment. The user selects with arrow keys.
-
-- **Fix** — Queue for fixing. Record what to change. Next comment.
-- **Skip** — Next comment.
-- **Discuss** — Follow up with a freeform `AskUserQuestion` asking the user to explain. After discussion resolves, re-present with `options: ["Fix", "Skip"]` for final decision (no more Discuss option).
+Read `deep-analysis.md` in this skill directory for the deep analysis methodology, severity re-evaluation rules, presentation templates, and user response handling via `AskUserQuestion`.
 
 ## Step 3B — Medium/Low overview + rescue
 
@@ -251,8 +174,8 @@ For deduplicated groups, show sources and count in the summary line (e.g., `(cod
 
 ### Rescue flow
 
-1. Perform deep analysis for selected comment (same as Step 3A: diff + function context + project conventions)
-2. Present using Step 3A template
+1. Perform deep analysis for selected comment (same methodology as Step 3A — see `deep-analysis.md`)
+2. Present using the Step 3A presentation template
 3. If severity upgraded during deep analysis, show the change in header (e.g., `[Medium → Major]`)
 4. User responds via `AskUserQuestion` with `["Fix", "Skip", "Discuss"]` as in Step 3A
 5. After all rescued comments processed, proceed to Step 4
@@ -284,15 +207,7 @@ Ask: **"Want to reply and resolve threads on GitHub? (yes / no)"**
 
 If **no**: done.
 
-If **yes**: read `resolve-threads.md` in this skill directory for the API commands to reply to comments and resolve review threads via GraphQL.
-
-Thread resolution rules:
-
-- **Fixed comments** (from Step 3A or rescued in Step 3B): reply explaining the fix, then resolve
-- **Explicitly skipped comments** (from Step 3A or rescued in Step 3B): reply explaining why skipped, then resolve
-- **Auto-skipped Medium/Low comments** (not rescued): resolve without reply, similar to outdated comments
-- **Outdated comments**: resolve without reply (existing behavior)
-- **Deduplicated groups**: each comment in the group gets its own reply (referencing the same fix) and is resolved independently
+If **yes**: read `resolve-threads.md` in this skill directory for the API commands, reply rules per category, and dedup group handling.
 
 ## Common mistakes
 

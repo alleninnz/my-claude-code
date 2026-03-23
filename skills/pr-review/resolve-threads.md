@@ -1,29 +1,39 @@
 # Reply and Resolve Threads — API Reference
 
-## Reply to each processed comment
+## Reply rules by comment category
 
-For review comments that were fixed:
+| Category | Reply before resolving? | Reply content |
+|----------|------------------------|---------------|
+| Fixed (from Step 3A or rescued in Step 3B) | Yes | "Fixed in latest push. \<brief explanation\>" |
+| Explicitly skipped (from Step 3A or rescued in Step 3B) | Yes | Concise reason why skipped |
+| Auto-skipped Medium/Low (not rescued) | No | Resolve without reply |
+| Outdated | No | Resolve without reply |
+| Deduplicated groups | Yes (each comment individually) | Same reply referencing the shared fix |
+
+## Reply to review comments
+
+For fixed comments:
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/{number}/comments/{id}/replies \
   -f body="Fixed in latest push. <brief explanation>"
 ```
 
-For issue comments that were fixed:
-
-```bash
-gh api repos/{owner}/{repo}/issues/{number}/comments \
-  -f body="Fixed in latest push. <brief explanation>"
-```
-
-For review comments that were skipped:
+For explicitly skipped comments:
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/{number}/comments/{id}/replies \
   -f body="<concise reason why this was intentionally skipped — e.g. existing pattern is sufficient, the concern is redundant, or the suggestion doesn't apply>"
 ```
 
-Always leave a reply explaining the reasoning before resolving. A resolved thread with no reply looks like it was ignored.
+## Reply to issue comments (PR-level)
+
+For fixed issue comments:
+
+```bash
+gh api repos/{owner}/{repo}/issues/{number}/comments \
+  -f body="Fixed in latest push. <brief explanation>"
+```
 
 ## Resolve review threads
 
@@ -51,3 +61,11 @@ Match thread comment IDs to the comment IDs processed in this run. Resolve each 
 ```bash
 gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<threadId>"}) { thread { isResolved } } }'
 ```
+
+## Deduplicated groups
+
+For groups with multiple comment IDs:
+
+1. Reply to each comment in the group individually (all referencing the same fix)
+2. Resolve each comment's thread independently
+3. Use the same reply body for all comments in a group
