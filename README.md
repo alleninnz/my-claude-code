@@ -39,7 +39,6 @@ Skills run in the main conversation context (no agent subprocess).
 |-------|-------------|
 | `/cr-review` | Run CodeRabbit CLI review with interactive issue selection |
 | `/pr-review` | Interactive per-comment review of AI reviewer feedback on current PR |
-| `/ultrawork` | Decompose tasks, route to model tiers, dispatch parallel subagents |
 | `golang-patterns` | Go idioms, error handling, concurrency, interfaces, package design |
 | `golang-testing` | Table-driven tests, subtests, benchmarks, fuzzing, coverage |
 | `e2e-testing` | Playwright page objects, config, flaky test handling |
@@ -69,7 +68,6 @@ Loading order: my-claude-code skills first (domain knowledge), then superpowers 
 | /e2e, e2e-runner | e2e-testing | verification-before-completion |
 | /go-simplify, go-simplifier | golang-patterns | — |
 | /cr-review | — | — |
-| /ultrawork | — | — (self-contained) |
 | /pr-review | — | — |
 
 ## License
