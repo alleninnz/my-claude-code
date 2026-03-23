@@ -201,22 +201,32 @@ If no fixes queued: report "No fixes to apply" and proceed to Step 5.
 
 If fixes queued: apply all fixes, run build/lint/test to verify, show summary of changes. If build breaks, investigate and adjust.
 
-**Stop here.** Do NOT commit, push, or modify git state. The user handles git workflow.
+## Step 4.5 — Commit and push
+
+Use `AskUserQuestion` to ask whether the user wants to commit and push the fixes:
+
+Options: `["Commit and push (Recommended)", "Skip"]`
+
+If **Commit and push**: stage the changed files, create a commit with a descriptive message, and push to the current branch.
+
+If **Skip**: do NOT commit or push. The user handles git workflow.
 
 ## Step 5 — Optional reply and resolve threads
 
-Ask: **"Want to reply and resolve threads on GitHub? (yes / no)"**
+Use `AskUserQuestion` to ask whether the user wants to reply and resolve threads on GitHub:
 
-If **no**: done.
+Options: `["Yes (Recommended)", "No"]`
 
-If **yes**: read `resolve-threads.md` in this skill directory for the API commands, reply rules per category, and dedup group handling.
+If **No**: done.
+
+If **Yes**: read `resolve-threads.md` in this skill directory for the API commands, reply rules per category, and dedup group handling.
 
 ## Common mistakes
 
 - **Echoing the AI text verbatim** — The whole point is to translate into plain language. The **Analysis** section should contain YOUR independent analysis, not a rephrasing of the reviewer's text.
 - **Shallow analysis without reading diff/context** — For Critical/Major comments (Step 3A), you MUST read the git diff, function-level context, and project conventions before presenting. This is what makes the analysis valuable.
 - **Agreeing with the reviewer by default** — Form your own judgment. If the reviewer's concern doesn't apply given the code context, say so explicitly and recommend Skip.
-- **Committing or pushing** — Never. The user handles git workflow after fixes are applied.
+- **Committing or pushing without asking** — Always use `AskUserQuestion` in Step 4.5 before touching git state.
 - **Processing human comments** — Only bot reviewers. Filter is in the jq query.
 - **Presenting Copilot comments interactively** — Copilot has high false-positive rate. Auto-triage in Step 2.75, only promote legitimate findings.
 - **Fixing without queuing first** — Go through ALL comments (Step 3A + Step 3B) before applying any fixes in Step 4.
