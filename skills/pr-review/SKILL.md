@@ -138,6 +138,8 @@ Split into two queues:
 - **Critical/Major queue** → Step 3A (interactive deep review)
 - **Medium/Low queue** → Step 3B (overview + rescue)
 
+If the Critical/Major queue is empty, skip Step 3A and proceed directly to Step 3B.
+
 ## Step 3A — Critical/Major interactive review
 
 For each Critical/Major comment (or deduplicated group), perform deep analysis before presentation.

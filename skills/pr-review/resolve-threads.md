@@ -7,6 +7,7 @@
 | Fixed (from Step 3A or rescued in Step 3B) | Yes | "Fixed in latest push. \<brief explanation\>" |
 | Explicitly skipped (from Step 3A or rescued in Step 3B) | Yes | Concise reason why skipped |
 | Auto-skipped Medium/Low (not rescued) | No | Resolve without reply |
+| Auto-skipped Copilot (noise from Step 2.75) | No | Resolve without reply |
 | Outdated | No | Resolve without reply |
 | Deduplicated groups | Yes (each comment individually) | Same reply referencing the shared fix |
 
@@ -33,6 +34,13 @@ For fixed issue comments:
 ```bash
 gh api repos/{owner}/{repo}/issues/{number}/comments \
   -f body="Fixed in latest push. <brief explanation>"
+```
+
+For explicitly skipped issue comments:
+
+```bash
+gh api repos/{owner}/{repo}/issues/{number}/comments \
+  -f body="<concise reason why this was intentionally skipped>"
 ```
 
 ## Resolve review threads
