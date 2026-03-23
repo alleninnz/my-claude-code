@@ -42,7 +42,7 @@ disagreement and reasoning explicitly.>
 </details>
 ```
 
-Then prompt the user with `AskUserQuestion` using selectable options: `["Fix", "Skip", "Discuss"]`. If the user selects "Discuss", follow up with a freeform `AskUserQuestion` to get their input.
+**MANDATORY: You MUST use the `AskUserQuestion` tool here — do NOT present options as text.** Place your recommended option first with "(Recommended)" appended. For example, if recommending Skip: `options: ["Skip (Recommended)", "Fix", "Discuss"]`. If recommending Fix: `options: ["Fix (Recommended)", "Skip", "Discuss"]`. If the user selects "Discuss", follow up with a freeform `AskUserQuestion` to get their input.
 
 ## Presentation template — deduplicated group
 
@@ -65,14 +65,14 @@ Then prompt the user with `AskUserQuestion` using selectable options: `["Fix", "
 </details>
 ```
 
-Same `AskUserQuestion` with `["Fix", "Skip", "Discuss"]` options.
+Same **mandatory `AskUserQuestion`** with recommended option first (see single comment template above).
 
 Omit `📍` and `**Diff:**` for PR-level issue comments.
 
 ## User responses
 
-Use `AskUserQuestion` with `options: ["Fix", "Skip", "Discuss"]` for each comment. The user selects with arrow keys.
+**MUST use `AskUserQuestion` tool** (not text-based options) for every comment. Place recommended option first with "(Recommended)" suffix. The user selects with arrow keys.
 
 - **Fix** — Queue for fixing. Record what to change. Next comment.
 - **Skip** — Next comment.
-- **Discuss** — Follow up with a freeform `AskUserQuestion` asking the user to explain. After discussion resolves, re-present with `options: ["Fix", "Skip"]` for final decision (no more Discuss option).
+- **Discuss** — Follow up with a freeform `AskUserQuestion` asking the user to explain. After discussion resolves, re-present with `AskUserQuestion` using `options: ["Fix (Recommended)", "Skip"]` for final decision (no more Discuss option).

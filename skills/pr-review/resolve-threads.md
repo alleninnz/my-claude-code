@@ -11,20 +11,34 @@
 | Outdated | No | Resolve without reply |
 | Deduplicated groups | Yes (each comment individually) | Same reply referencing the shared fix |
 
+## Suppressing output noise
+
+**All `gh api` calls in this step MUST redirect output to `/dev/null`** to avoid cluttering the terminal with JSON responses. Run all reply and resolve commands silently. After all replies are posted, print a single status line:
+
+```
+All replies posted. Now resolving threads.
+```
+
+After all threads are resolved, print:
+
+```
+All N threads resolved.
+```
+
 ## Reply to review comments
 
 For fixed comments:
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/{number}/comments/{id}/replies \
-  -f body="Fixed in latest push. <brief explanation>"
+  -f body="Fixed in latest push. <brief explanation>" > /dev/null
 ```
 
 For explicitly skipped comments:
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/{number}/comments/{id}/replies \
-  -f body="<concise reason why this was intentionally skipped — e.g. existing pattern is sufficient, the concern is redundant, or the suggestion doesn't apply>"
+  -f body="<concise reason why this was intentionally skipped>" > /dev/null
 ```
 
 ## Reply to issue comments (PR-level)
@@ -33,14 +47,14 @@ For fixed issue comments:
 
 ```bash
 gh api repos/{owner}/{repo}/issues/{number}/comments \
-  -f body="Fixed in latest push. <brief explanation>"
+  -f body="Fixed in latest push. <brief explanation>" > /dev/null
 ```
 
 For explicitly skipped issue comments:
 
 ```bash
 gh api repos/{owner}/{repo}/issues/{number}/comments \
-  -f body="<concise reason why this was intentionally skipped>"
+  -f body="<concise reason why this was intentionally skipped>" > /dev/null
 ```
 
 ## Resolve review threads
@@ -64,16 +78,17 @@ gh api graphql -F owner='{owner}' -F repo='{repo}' -F number={number} -f query='
   }' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | {threadId: .id, commentId: .comments.nodes[0].databaseId}'
 ```
 
-Match thread comment IDs to the comment IDs processed in this run. Resolve each matched thread:
+Match thread comment IDs to the comment IDs processed in this run. Resolve each matched thread silently:
 
 ```bash
-gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<threadId>"}) { thread { isResolved } } }'
+gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<threadId>"}) { thread { isResolved } } }' > /dev/null
 ```
 
 ## Deduplicated groups
 
 For groups with multiple comment IDs:
 
-1. Reply to each comment in the group individually (all referencing the same fix)
+1. Reply to each comment in the group individually (all referencing the shared fix)
 2. Resolve each comment's thread independently
 3. Use the same reply body for all comments in a group
+4. All commands redirect to `/dev/null` — same noise suppression rules apply
