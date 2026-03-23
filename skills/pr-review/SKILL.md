@@ -173,20 +173,20 @@ For single comments:
 **Diff:**
 <git diff snippet, only the change related to this comment, ±3 lines context>
 
-**问题分析:**
+**Analysis:**
 <2-3 sentences: what the reviewer flagged, why it matters (or doesn't),
 impact on current code. If Claude disagrees with reviewer, state the
 disagreement and reasoning explicitly.>
 
-**建议:** Fix / Skip
+**Recommendation:** Fix / Skip
 <1-sentence rationale>
 
-<details><summary>原始 comment</summary>
+<details><summary>Original comment</summary>
 <raw reviewer text>
 </details>
-
-[1] Fix  [2] Skip  [3] Discuss(请说明)
 ```
+
+Then prompt the user with `AskUserQuestion` using selectable options: `["Fix", "Skip", "Discuss"]`. If the user selects "Discuss", follow up with a freeform `AskUserQuestion` to get their input.
 
 For deduplicated groups:
 
@@ -197,27 +197,29 @@ For deduplicated groups:
 **Diff:**
 <shared diff snippet>
 
-**问题分析:**
+**Analysis:**
 <merged analysis, noting each reviewer's angle if different>
 
-**建议:** Fix / Skip
+**Recommendation:** Fix / Skip
 <rationale>
 
-<details><summary>原始 comments (2)</summary>
+<details><summary>Original comments (2)</summary>
 [coderabbit] ...
 [copilot] ...
 </details>
-
-[1] Fix  [2] Skip  [3] Discuss(请说明)
 ```
+
+Same `AskUserQuestion` with `["Fix", "Skip", "Discuss"]` options.
 
 Omit `📍` and `**Diff:**` for PR-level issue comments.
 
 ### User responses
 
-- `1` (Fix) — Queue for fixing. Record what to change. Next comment.
-- `2` (Skip) — Next comment.
-- `3` (Discuss) — User provides additional context or custom fix instructions. After discussion resolves, re-present `[1] Fix  [2] Skip` for final decision (no more Discuss option).
+Use `AskUserQuestion` with `options: ["Fix", "Skip", "Discuss"]` for each comment. The user selects with arrow keys.
+
+- **Fix** — Queue for fixing. Record what to change. Next comment.
+- **Skip** — Next comment.
+- **Discuss** — Follow up with a freeform `AskUserQuestion` asking the user to explain. After discussion resolves, re-present with `options: ["Fix", "Skip"]` for final decision (no more Discuss option).
 
 ## Step 3B — Medium/Low overview + rescue
 
@@ -232,7 +234,7 @@ Present all Medium/Low comments (including any downgraded from Step 3A) as a num
 3. [Low]    path/to/util.go:12 — variable naming: prefer camelCase (copilot)
 4. [Low]    path/to/model.go:33 — unused parameter in function signature (coderabbit)
 
-输入编号 rescue (如 1,3), 或直接回车全部 skip:
+Enter numbers to rescue (e.g. 1,3), or press Enter to skip all:
 ```
 
 One-line summaries were generated in Step 2.9 from comment text (no code reads).
@@ -252,7 +254,7 @@ For deduplicated groups, show sources and count in the summary line (e.g., `(cod
 1. Perform deep analysis for selected comment (same as Step 3A: diff + function context + project conventions)
 2. Present using Step 3A template
 3. If severity upgraded during deep analysis, show the change in header (e.g., `[Medium → Major]`)
-4. User responds with `[1] Fix  [2] Skip  [3] Discuss` as in Step 3A
+4. User responds via `AskUserQuestion` with `["Fix", "Skip", "Discuss"]` as in Step 3A
 5. After all rescued comments processed, proceed to Step 4
 
 ## Step 4 — Apply queued fixes
@@ -294,7 +296,7 @@ Thread resolution rules:
 
 ## Common mistakes
 
-- **Echoing the AI text verbatim** — The whole point is to translate into plain language. The `问题分析` section should contain YOUR independent analysis, not a rephrasing of the reviewer's text.
+- **Echoing the AI text verbatim** — The whole point is to translate into plain language. The **Analysis** section should contain YOUR independent analysis, not a rephrasing of the reviewer's text.
 - **Shallow analysis without reading diff/context** — For Critical/Major comments (Step 3A), you MUST read the git diff, function-level context, and project conventions before presenting. This is what makes the analysis valuable.
 - **Agreeing with the reviewer by default** — Form your own judgment. If the reviewer's concern doesn't apply given the code context, say so explicitly and recommend Skip.
 - **Committing or pushing** — Never. The user handles git workflow after fixes are applied.
