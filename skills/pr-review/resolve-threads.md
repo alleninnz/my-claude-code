@@ -16,7 +16,14 @@ gh api repos/{owner}/{repo}/issues/{number}/comments \
   -f body="Fixed in latest push. <brief explanation>"
 ```
 
-Skipped comments: no reply.
+For review comments that were skipped:
+
+```bash
+gh api repos/{owner}/{repo}/pulls/{number}/comments/{id}/replies \
+  -f body="<concise reason why this was intentionally skipped — e.g. existing pattern is sufficient, the concern is redundant, or the suggestion doesn't apply>"
+```
+
+Always leave a reply explaining the reasoning before resolving. A resolved thread with no reply looks like it was ignored.
 
 ## Resolve review threads
 
