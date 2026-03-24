@@ -94,7 +94,7 @@ Proceeding with M remaining comment(s)...
 
 The one-line summary is derived from the comment body — translate to plain language, same as the interactive comments, but condensed to one line.
 
-If all comments are outdated (M=0), display the batch summary, report "No active comments to review", and proceed directly to Step 5. In this case, Step 5 will only offer to resolve the outdated threads (without reply).
+If all comments are outdated (M=0), display the batch summary, report "No active comments to review", and proceed directly to Step 5.
 
 ## Step 2.75 — Triage Copilot comments
 
@@ -256,7 +256,7 @@ Options: `["Yes (Recommended)", "No"]`
 
 If **No**: done.
 
-If **Yes**: read `resolve-threads.md` in this skill directory for the API commands, reply rules per category, and dedup group handling.
+If **Yes**: read `resolve-threads.md` in this skill directory for the API commands, reply rules per category, and dedup group handling. **Every thread MUST receive a reply before being resolved** — never resolve silently, even for auto-skipped, outdated, or Copilot noise threads.
 
 ## Common mistakes
 
@@ -270,3 +270,4 @@ If **Yes**: read `resolve-threads.md` in this skill directory for the API comman
 - **Presenting outdated comments interactively** — Comments with `line: null` are outdated. Batch them in Step 2.5.
 - **Presenting Medium/Low comments one-by-one** — These go to the overview list in Step 3B with default skip. Only deep-analyze if the user rescues them.
 - **Skipping deduplication** — Group similar comments before interaction. One fix per group, not per comment.
+- **Resolving threads without replying** — Every thread must get a reply explaining why it was resolved (fixed, skipped with reason, not applicable, etc.). Silent resolves leave reviewers and readers without context.

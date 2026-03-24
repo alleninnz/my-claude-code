@@ -2,14 +2,16 @@
 
 ## Reply rules by comment category
 
-| Category | Reply before resolving? | Reply content |
-|----------|------------------------|---------------|
-| Fixed (from Step 3A or rescued in Step 3B) | Yes | "Fixed in latest push. \<brief explanation\>" |
-| Explicitly skipped (from Step 3A or rescued in Step 3B) | Yes | Concise reason why skipped |
-| Auto-skipped Medium/Low (not rescued) | No | Resolve without reply |
-| Auto-skipped Copilot (noise from Step 2.75) | No | Resolve without reply |
-| Outdated | No | Resolve without reply |
-| Deduplicated groups | Yes (each comment individually) | Same reply referencing the shared fix |
+**Every thread MUST receive a reply before resolving.** Never resolve a thread silently — the reviewer (bot or human) and other readers should always see why a thread was resolved.
+
+| Category | Reply content |
+|----------|---------------|
+| Fixed (from Step 3A or rescued in Step 3B) | "Fixed in \<commit\>. \<brief explanation of what changed\>" |
+| Explicitly skipped (from Step 3A or rescued in Step 3B) | Concise technical reason why skipped (e.g., "Follows existing codebase convention — all services use concrete deps") |
+| Auto-skipped Medium/Low (not rescued) | One-line reason (e.g., "Style preference — not addressing in this PR", "Low-impact edge case, tracked for follow-up") |
+| Auto-skipped Copilot (noise from Step 2.75) | One-line reason explaining why it's not applicable (e.g., "Not applicable — Go 1.22+ fixed loop variable semantics") |
+| Outdated | "Already addressed in \<commit\>" or "No longer applicable after \<change\>" |
+| Deduplicated groups | Same reply on each comment in the group, referencing the shared fix |
 
 ## Suppressing output noise
 
@@ -27,37 +29,33 @@ All N threads resolved.
 
 ## Reply to review comments
 
-For fixed comments:
+**Every comment gets a reply.** Use the appropriate template based on category:
 
 ```bash
+# Fixed comments
 gh api repos/{owner}/{repo}/pulls/{number}/comments/{id}/replies \
-  -f body="Fixed in latest push. <brief explanation>" > /dev/null
-```
+  -f body="Fixed in <commit>. <brief explanation>" > /dev/null
 
-For explicitly skipped comments:
-
-```bash
+# Skipped comments (any category — explicit skip, auto-skip, Copilot noise, outdated)
 gh api repos/{owner}/{repo}/pulls/{number}/comments/{id}/replies \
-  -f body="<concise reason why this was intentionally skipped>" > /dev/null
+  -f body="<one-line technical reason>" > /dev/null
 ```
 
 ## Reply to issue comments (PR-level)
 
-For fixed issue comments:
-
 ```bash
+# Fixed
 gh api repos/{owner}/{repo}/issues/{number}/comments \
-  -f body="Fixed in latest push. <brief explanation>" > /dev/null
-```
+  -f body="Fixed in <commit>. <brief explanation>" > /dev/null
 
-For explicitly skipped issue comments:
-
-```bash
+# Skipped
 gh api repos/{owner}/{repo}/issues/{number}/comments \
-  -f body="<concise reason why this was intentionally skipped>" > /dev/null
+  -f body="<one-line technical reason>" > /dev/null
 ```
 
 ## Resolve review threads
+
+First reply to every thread (see above), then resolve. Never resolve without replying first.
 
 Fetch unresolved thread IDs:
 
@@ -78,7 +76,7 @@ gh api graphql -F owner='{owner}' -F repo='{repo}' -F number={number} -f query='
   }' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | {threadId: .id, commentId: .comments.nodes[0].databaseId}'
 ```
 
-Match thread comment IDs to the comment IDs processed in this run. Resolve each matched thread silently:
+Match thread comment IDs to the comment IDs processed in this run. Resolve each matched thread:
 
 ```bash
 gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<threadId>"}) { thread { isResolved } } }' > /dev/null
