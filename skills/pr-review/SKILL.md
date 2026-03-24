@@ -148,23 +148,34 @@ Read `deep-analysis.md` in this skill directory for the deep analysis methodolog
 
 ## Step 3B — Medium/Low overview + rescue
 
-Present all Medium/Low comments (including any downgraded from Step 3A) as a numbered overview list. Default action is skip; user can rescue specific comments for deep review.
+Present all Medium/Low comments (including any downgraded from Step 3A) as a numbered overview list with analysis and recommendations. Default action is skip; user can rescue specific comments for deep review.
 
 ### Overview template
 
+Each entry must include: what the reviewer wants (plain language), your recommendation (fix/skip), and brief reasoning. Do NOT just echo a one-line summary — give the user enough context to decide without reading the original comment.
+
 ```text
 ── Medium/Low (N comments, default skip) ──────
-1. [Medium] path/to/file.go:88 — missing context cancellation check (coderabbit)
-2. [Medium] path/to/handler.go:55 — suggest using constants instead of magic number (coderabbit, copilot × 2)
-3. [Low]    path/to/util.go:12 — variable naming: prefer camelCase (copilot)
-4. [Low]    path/to/model.go:33 — unused parameter in function signature (coderabbit)
+1. [Medium] path/to/file.go:88 (coderabbit)
+   Reviewer wants: Add context cancellation check to prevent goroutine leak in long-running handler.
+   Recommendation: Fix — real concern, handler runs unbounded without cancellation.
 
-Enter numbers to rescue (e.g. 1,3), or press Enter to skip all:
+2. [Medium] path/to/handler.go:55 (coderabbit, copilot × 2)
+   Reviewer wants: Replace magic number 30 with a named constant for the retry timeout.
+   Recommendation: Skip — value is only used once, a constant adds indirection without clarity.
+
+3. [Low] path/to/util.go:12 (copilot)
+   Reviewer wants: Rename `tID` to `tenantID` for readability.
+   Recommendation: Skip — matches existing codebase convention, all surrounding code uses `tID`.
+
+4. [Low] path/to/model.go:33 (coderabbit)
+   Reviewer wants: Remove unused `opts` parameter from function signature.
+   Recommendation: Fix — dead parameter, removing it is a clean improvement.
+
+Enter numbers to rescue for deep review (e.g. 1,4), or press Enter to skip all:
 ```
 
-One-line summaries were generated in Step 2.9 from comment text (no code reads).
-
-For deduplicated groups, show sources and count in the summary line (e.g., `(coderabbit, copilot × 2)`).
+For deduplicated groups, show sources and count (e.g., `(coderabbit, copilot × 2)`).
 
 ### Interaction rules
 
