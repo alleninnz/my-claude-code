@@ -47,8 +47,8 @@ Omit `📍` and `**Diff:**` for PR-level issue comments.
 
 ## User responses
 
-**MUST use `AskUserQuestion` tool** (not text options) for every comment. Place recommended option first with "(Recommended)" suffix.
+After presenting each comment, wait for the user to type a freeform response. Do NOT use `AskUserQuestion`. Expected responses:
 
-- **Fix** — Queue for fixing. Record what to change. Next comment.
-- **Skip** — Next comment.
-- **Discuss** — Follow up with freeform `AskUserQuestion`. After discussion, re-present with `["Fix (Recommended)", "Skip"]` (no more Discuss).
+- **`fix`** — Queue for fixing. Record what to change. Next comment.
+- **`skip`** — Next comment.
+- Anything else — treat as discussion. Address the user's point, then present the comment again for a final `fix`/`skip` decision. If the user discusses again, make a judgment call and proceed.

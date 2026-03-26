@@ -1,6 +1,6 @@
 # PR Review — Data Gathering Subagent
 
-Dispatch this as an Agent with `model: sonnet` (mechanical data fetching, no judgment needed beyond Copilot triage).
+Dispatch this as an Agent with `model: sonnet` (mechanical data fetching, no judgment needed beyond Copilot triage). The subagent must use `gh` CLI (via Bash tool) for all GitHub API calls — never GitHub MCP tools.
 
 ## Prompt template
 

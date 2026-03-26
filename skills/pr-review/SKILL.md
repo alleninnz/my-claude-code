@@ -12,6 +12,11 @@ Interactive review of all unresolved PR review comments — both AI reviewer (Co
 - `gh` CLI installed and authenticated
 - Current branch has an open PR (or PR URL/number provided as argument)
 
+## Tool constraints
+
+- **`gh` CLI only** — use `gh api` (via Bash tool) for all GitHub API calls. Never use GitHub MCP tools.
+- **No `AskUserQuestion`** — present your analysis and recommendation, then let the user type a freeform response (`fix`, `skip`, `1,3`, etc.).
+
 ## Step 1 — Gather and classify comments (silent)
 
 Dispatch a subagent using the prompt template in `data-gather.md`. The subagent silently:
@@ -48,7 +53,7 @@ Show the subagent's triage results. Only show sections that have content:
 
 For each Critical/Major comment (or deduplicated group), perform deep analysis before presentation.
 
-Read `deep-analysis.md` for the methodology, severity re-evaluation rules, presentation template, and user response handling via `AskUserQuestion`.
+Read `deep-analysis.md` for the methodology, severity re-evaluation rules, presentation template, and user response handling.
 
 If all Critical/Major comments are downgraded during deep analysis, skip this step and merge them into Step 4.
 
@@ -77,7 +82,7 @@ Enter numbers to rescue for deep review (e.g. 1,2), or press Enter to skip all:
 | `1,3` | Deep-analyze selected using Step 3 process, rest skip |
 | `all` | Rescue all, present each using Step 3 |
 
-**Rescue flow:** Deep-analyze using `deep-analysis.md`, present with same template. If severity upgraded, show change in header (e.g., `[Medium → Major]`). User responds via `AskUserQuestion`.
+**Rescue flow:** Deep-analyze using `deep-analysis.md`, present with same template. If severity upgraded, show change in header (e.g., `[Medium → Major]`). User responds with `fix` or `skip`.
 
 ## Step 5 — Apply queued fixes
 
@@ -100,24 +105,24 @@ If fixes queued: apply all fixes, run build/lint/test to verify, show summary of
 
 ## Step 6 — Commit and push
 
-Use `AskUserQuestion`: `["Commit and push (Recommended)", "Skip"]`
+Ask: "Commit and push? (y/n, recommended: y)"
 
-If **Commit and push**: stage changed files, create a descriptive commit, push.
-If **Skip**: do NOT commit or push.
+If **y**: stage changed files, create a descriptive commit, push.
+If **n**: do NOT commit or push.
 
 ## Step 7 — Reply and resolve threads
 
-Use `AskUserQuestion`: `["Yes (Recommended)", "No"]`
+Ask: "Reply and resolve threads? (y/n, recommended: y)"
 
-If **No**: done.
+If **n**: done.
 
-If **Yes**: read `resolve-threads.md` for API commands and reply rules. **Every thread MUST receive a reply before being resolved** — never resolve silently.
+If **y**: read `resolve-threads.md` for API commands and reply rules. **Every thread MUST receive a reply before being resolved** — never resolve silently.
 
 ## Common mistakes
 
 - **Echoing AI text verbatim** — Translate to plain language. The Analysis section is YOUR independent analysis.
 - **Shallow analysis without reading diff/context** — For Critical/Major, you MUST read the git diff and function context before presenting.
 - **Agreeing with the reviewer by default** — Form your own judgment. If the concern doesn't apply, say so.
-- **Committing or pushing without asking** — Always use `AskUserQuestion` in Step 6.
+- **Committing or pushing without asking** — Always ask the user in Step 6.
 - **Fixing without queuing first** — Go through ALL comments (Steps 3 + 4) before applying fixes in Step 5.
 - **Resolving threads without replying** — Every thread must get a reply explaining why it was resolved.
