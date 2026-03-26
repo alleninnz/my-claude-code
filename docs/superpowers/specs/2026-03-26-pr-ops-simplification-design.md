@@ -22,9 +22,14 @@ Six PR lifecycle operations:
 
 ## Design
 
+PR creation moves into this skill. Previously the skill explicitly excluded creation — now it's the primary value-add.
+
 ### Description Generation
 
-Source: diff-based via `git diff $(git merge-base HEAD <base>)..HEAD` where `<base>` is the PR's base branch (typically `main`).
+Source: diff-based via `git diff $(git merge-base HEAD <base>)..HEAD`. Base branch resolution:
+
+- **create:** repo's default branch (usually `main`), or user-specified `--base`
+- **update:** the PR's existing base branch (queried via `gh pr view --json baseRefName`)
 
 **Title:** Conventional-commit style, imperative mood, under 70 characters. Example: `feat(auth): add session token refresh`.
 
@@ -36,7 +41,7 @@ Source: diff-based via `git diff $(git merge-base HEAD <base>)..HEAD` where `<ba
 
 ### Update Behavior
 
-"Update PR" regenerates the body from the current diff. Title is preserved unless the user explicitly asks to change it.
+"Update PR" regenerates the body from the current diff, regardless of whether the PR previously had a body. Title is preserved unless the user explicitly asks to change it.
 
 ### Confirmation Policy
 
