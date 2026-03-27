@@ -10,13 +10,20 @@ Smart PR creation and updates with diff-based description generation.
 ## create — Create a new PR (always draft)
 
 1. Determine base branch: repo default (usually `main`), or user-specified
-2. Get diff: `git diff $(git merge-base HEAD <base>)..HEAD`
-3. Generate title: conventional-commit style, imperative mood, under 70 chars
-4. Generate body (adaptive):
+2. Infer ticket ID (check in order, stop at first match):
+   - User's arguments (e.g. `/pr create APP-21395`)
+   - Branch name (e.g. `feat/app-21395-...` → `APP-21395`)
+   - Commit messages (e.g. `APP-21395 | ...` or `(APP-21395)`)
+   - Recent conversation context (e.g. a Linear issue just discussed)
+   - If no ticket ID found, ask the user before proceeding
+3. Get diff: `git diff $(git merge-base HEAD <base>)..HEAD`
+4. Generate title: `<TICKET-ID> | <conventional-commit style>`, imperative mood, under 70 chars
+5. Generate body (adaptive):
    - Small diff (<100 changed lines): 1-3 bullet summary
    - Larger diff: `## Summary` (3-5 bullets) + `## Test plan` (checklist)
+   - Include `Closes <TICKET-ID>` before the footer
    - Footer: `Generated with [Claude Code](https://claude.com/claude-code)`
-5. Create: `gh pr create --draft --title "<title>" --body "<body>"`
+6. Create: `gh pr create --draft --title "<title>" --body "<body>"`
 
 ## update — Regenerate PR description
 
