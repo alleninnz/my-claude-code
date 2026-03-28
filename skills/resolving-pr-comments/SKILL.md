@@ -1,5 +1,5 @@
 ---
-name: pr-review
+name: resolving-pr-comments
 description: Use when the current PR has AI reviewer comments (CodeRabbit, Cursor, etc.) that need to be reviewed and addressed, or when the user says "pr review", "review comments", "fix review comments".
 ---
 
@@ -37,12 +37,14 @@ If the subagent reports no comments, output "No review comments found" and stop.
 Show the subagent's triage results. Only show sections that have content:
 
 **Outdated** (if any):
+
 ```text
 ── N outdated comment(s) ──────────
 1. [bot-name] path/to/file.go — <one-line summary>
 ```
 
 **Copilot triage** (if any):
+
 ```text
 ── N Copilot comment(s) (auto-triaged) ──────────
 1. ✗ path/to/file.go:42 — <one-line summary> — <why skipped>

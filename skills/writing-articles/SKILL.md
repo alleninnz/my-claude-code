@@ -1,14 +1,13 @@
 ---
-name: article-writing
-description: Use when writing technical articles, blog posts, or newsletters — covers voice capture, structure, and evidence-first writing.
-origin: everything-claude-code
+name: writing-articles
+description: Use when writing technical articles, blog posts, newsletters, or turning notes and research into polished long-form content that matches a specific voice.
 ---
 
 # Article Writing
 
 Write long-form content that sounds like a real person or brand, not generic AI output.
 
-## When to Activate
+## When to Use
 
 - drafting blog posts, essays, launch posts, guides, tutorials, or newsletter issues
 - turning notes, transcripts, or research into polished articles
@@ -22,6 +21,16 @@ Write long-form content that sounds like a real person or brand, not generic AI 
 3. Prefer short, direct sentences over padded ones.
 4. Use specific numbers when available and sourced.
 5. Never invent biographical facts, company metrics, or customer evidence.
+
+## Quick Reference
+
+| Step | Action |
+|------|--------|
+| Voice | Collect examples → extract rhythm, tone, formatting habits |
+| Open | Lead with evidence, example, or scene — never a generic intro |
+| Structure | One purpose per section, example-first, then explanation |
+| Edit | Delete filler, hype, and unsourced claims |
+| Deliver | Verify facts, confirm voice match, check platform formatting |
 
 ## Voice Capture Workflow
 
