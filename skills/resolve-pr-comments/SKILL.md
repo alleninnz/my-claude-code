@@ -1,5 +1,5 @@
 ---
-name: resolving-pr-comments
+name: resolve-pr-comments
 description: Use when the current PR has AI reviewer comments (CodeRabbit, Cursor, etc.) that need to be reviewed and addressed, or when the user says "pr review", "review comments", "fix review comments".
 ---
 

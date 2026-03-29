@@ -1,5 +1,5 @@
 ---
-name: writing-articles
+name: write-articles
 description: Use when writing technical articles, blog posts, newsletters, or turning notes and research into polished long-form content that matches a specific voice.
 ---
 
