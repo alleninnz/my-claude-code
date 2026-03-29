@@ -33,16 +33,26 @@ Smart PR creation and updates with diff-based description generation.
 4. Update: `gh pr edit --body "<body>"`
 5. Title is preserved unless the user explicitly asks to change it
 
-## merge — Squash merge and clean up branches
+## merge — Squash merge with extended description and clean up branches
 
-1. Confirm with user before proceeding
-2. Merge: `gh pr merge --squash`
-3. Get base branch: `gh pr view --json baseRefName -q .baseRefName`
-4. Switch and update: `git checkout <base> && git pull`
-5. Delete remote branch: `git push origin --delete <merged-branch>`
-6. Delete local branch: `git branch -d <merged-branch>`
-7. If merge fails (checks, conflicts): report error and stop — do not clean up
-8. If branch cleanup fails after successful merge: warn but don't error
+1. Get PR metadata: `gh pr view --json title,body,baseRefName`
+2. Gather context (run in parallel, using base branch from step 1):
+   - `git log --oneline $(git merge-base HEAD <base>)..HEAD`
+   - `git diff $(git merge-base HEAD <base>)..HEAD`
+3. Generate squash commit message:
+   - **Subject**: PR title as-is (preserve ticket ID and conventional-commit style)
+   - **Body**: Generate an extended description from the diff and commit history:
+     - One-sentence summary of the change's purpose (the "why")
+     - Bulleted list of notable changes grouped by theme (not file-by-file — describe what changed functionally)
+     - Omit trivial changes (import reordering, formatting) — only include what a reviewer would care about in `git log`
+     - If the PR body contains a `Closes` line, include it at the end
+4. Confirm with user: show the generated subject and body, then ask to proceed
+5. Merge: `gh pr merge --squash --subject "<subject>" --body "<body>"`
+6. Switch and update: `git checkout <base> && git pull`
+7. Delete remote branch: `git push origin --delete <merged-branch>`
+8. Delete local branch: `git branch -d <merged-branch>`
+9. If merge fails (checks, conflicts): report error and stop — do not clean up
+10. If branch cleanup fails after successful merge: warn but don't error
 
 ## State Changes
 
