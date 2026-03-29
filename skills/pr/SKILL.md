@@ -25,13 +25,19 @@ Smart PR creation and updates with diff-based description generation.
    - Footer: `Generated with [Claude Code](https://claude.com/claude-code)`
 6. Create: `gh pr create --draft --title "<title>" --body "<body>"`
 
-## update — Regenerate PR description
+## update — Sync changes and update PR description
 
-1. Get base branch: `gh pr view --json baseRefName -q .baseRefName`
-2. Get diff: `git diff $(git merge-base HEAD <base>)..HEAD`
-3. Regenerate body using the same adaptive format as create
-4. Update: `gh pr edit --body "<body>"`
-5. Title is preserved unless the user explicitly asks to change it
+1. Check working tree (`git status --porcelain`) and push status (ahead/behind remote)
+2. If uncommitted changes:
+   a. Stage modified and new files relevant to the PR (not unrelated files or secrets)
+   b. Generate a conventional-commit message from the staged diff (match the repo's recent commit style via `git log --oneline -5`)
+   c. Commit and push
+3. Else if unpushed commits exist: push
+4. Get base branch: `gh pr view --json baseRefName -q .baseRefName`
+5. Get diff: `git diff $(git merge-base HEAD <base>)..HEAD`
+6. If new commits were pushed (step 2 or 3): regenerate body using the same adaptive format as create, then `gh pr edit --body "<body>"`
+7. If no new commits (clean tree, up to date with remote): skip description update — inform user the PR is already in sync
+8. Title is preserved unless the user explicitly asks to change it
 
 ## merge — Squash merge with extended description and clean up branches
 
