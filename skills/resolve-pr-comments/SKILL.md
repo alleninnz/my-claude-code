@@ -75,12 +75,12 @@ Each entry must include: what the reviewer wants (plain language), your recommen
    Reviewer wants: Remove unused `opts` parameter from function signature.
    Recommendation: Skip — matches existing codebase convention.
 
-Enter numbers to rescue for deep review, or prefix with 'fix' to queue directly:
+Enter numbers to rescue for deep review, or prefix with 'fix' to queue directly (type 'skip' to skip all):
 ```
 
 | User input | Behavior |
 |------------|----------|
-| Enter (empty) | All skip, proceed to Step 5 |
+| `skip` or `done` or `next` | All skip, proceed to Step 5 |
 | `1,3` | Deep-analyze selected using Step 3 process, rest skip |
 | `all` | Rescue all, present each using Step 3 |
 | `fix 2` or `fix 1,3` | Queue selected directly for fixing — no deep review |
