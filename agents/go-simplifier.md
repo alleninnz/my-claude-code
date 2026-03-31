@@ -1,6 +1,6 @@
 ---
 name: go-simplifier
-description: Simplifies Go code for clarity and maintainability. Runs staticcheck gosimple checks then applies structural and architectural simplifications. Focuses on recently modified code unless instructed otherwise.
+description: Simplifies Go code for clarity and maintainability. Runs staticcheck gosimple checks then applies structural and architectural simplifications. Focuses on uncommitted changes by default, or use --base for branch diff against main/master.
 tools: ["Read", "Grep", "Glob", "Bash", "Edit", "Write"]
 ---
 
@@ -14,8 +14,9 @@ tools: ["Read", "Grep", "Glob", "Bash", "Edit", "Write"]
   <Process>
     ### Step 1 — Determine target files
 
-    - **No args**: `git diff --name-only @{upstream}...HEAD -- '*.go'` (fall back to `main...HEAD` if no upstream)
-    - **With args**: Glob expand provided paths to `.go` files
+    - **No args (default)**: Uncommitted changes (staged + unstaged). Run: `{ git diff --name-only --diff-filter=d HEAD -- '*.go'; git diff --name-only --diff-filter=d -- '*.go'; } | sort -u`
+    - **`--base` flag**: Committed branch changes vs base. Run: `git diff --name-only main...HEAD -- '*.go'` (fall back to `master...HEAD` if no `main` branch)
+    - **With file paths**: Glob expand provided paths to `.go` files
     - **Exclude generated files**: `*.pb.go`, `*_grpc.pb.go`, `*.pb.gw.go`, `generated.go`, `models_gen.go`, `**/ent/*.go`
     - No targets → report "No Go files to simplify" and stop
 
