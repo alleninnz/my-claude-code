@@ -52,18 +52,16 @@ Smart PR creation and updates with diff-based description generation.
      - Bulleted list of notable changes grouped by theme (not file-by-file — describe what changed functionally)
      - Omit trivial changes (import reordering, formatting) — only include what a reviewer would care about in `git log`
      - If the PR body contains a `Closes` line, include it at the end
-4. Confirm with user: show the generated subject and body, then ask to proceed
-5. Merge: `gh pr merge --squash --subject "<subject>" --body "<body>"`
-6. Switch and update: `git checkout <base> && git pull`
-7. Delete local branch: `git branch -d <merged-branch>`
-8. Prune stale remote refs: `git fetch --prune`
-9. If merge fails (checks, conflicts): report error and stop — do not clean up
-10. If branch cleanup fails after successful merge: warn but don't error
+4. Merge: `gh pr merge --squash --subject "<subject>" --body "<body>"`
+5. Switch and update: `git checkout <base> && git pull`
+6. Delete local branch: `git branch -d <merged-branch>`
+7. Prune stale remote refs: `git fetch --prune`
+8. If merge fails (checks, conflicts): report error and stop — do not clean up
+9. If branch cleanup fails after successful merge: warn but don't error
 
 ## State Changes
 
-- **Confirm before:** `merge`, `close`, `reopen`
-- **No confirmation:** `open` (mark ready), `draft` (convert to draft)
+- All state changes (`merge`, `close`, `reopen`, `open`, `draft`) proceed without confirmation
 - Never use `--delete-branch` with close
 
 ## Common Mistakes
