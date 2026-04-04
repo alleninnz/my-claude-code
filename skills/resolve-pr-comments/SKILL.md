@@ -55,7 +55,9 @@ Show the subagent's triage results. Only show sections that have content:
 
 For each Critical/Major comment (or deduplicated group), perform deep analysis before presentation.
 
-Read `deep-analysis.md` for the methodology, severity re-evaluation rules, presentation template, and user response handling.
+Read `deep-analysis.md` for the methodology, severity re-evaluation rules, and presentation template.
+
+**Default-fix behavior:** When your recommendation is "Fix", the comment is auto-queued unless the user says `skip`. When your recommendation is "Skip", the comment is auto-skipped unless the user says `fix`. Present all Critical/Major comments in sequence, but the user only needs to respond when they disagree with your recommendation. After presenting each comment, wait briefly — if the user doesn't respond, apply the default.
 
 If all Critical/Major comments are downgraded during deep analysis, skip this step and merge them into Step 4.
 
@@ -107,30 +109,22 @@ Duplicates:     3 comments merged into 2 groups
 Total: 17 comments → 4 fixes queued
 ```
 
-If no fixes queued: report "No fixes to apply" and proceed to Step 6.
+If no fixes queued: report "No fixes to apply." then skip straight to replying and resolving threads — no commit/push needed, no confirmation prompt. Read `resolve-threads.md` for API commands and reply rules.
 
-If fixes queued: apply all fixes, run build/lint/test to verify, show summary of changes.
+If fixes queued: apply all fixes, run build/lint/test to verify, show summary of changes, then proceed to Step 6.
 
-## Step 6 — Commit and push
+## Step 6 — Commit, push, and resolve threads
 
-Ask: "Commit and push? (y/n, recommended: y)"
+Ask: "Commit and push, then reply and resolve threads? (y/n, recommended: y)"
 
-If **y**: stage changed files, create a descriptive commit, push.
-If **n**: do NOT commit or push.
-
-## Step 7 — Reply and resolve threads
-
-Ask: "Reply and resolve threads? (y/n, recommended: y)"
-
-If **n**: done.
-
-If **y**: read `resolve-threads.md` for API commands and reply rules. **Every thread MUST receive a reply before being resolved** — never resolve silently.
+If **y**: stage changed files, create a descriptive commit, push, then read `resolve-threads.md` for API commands and reply rules. **Every thread MUST receive a reply before being resolved** — never resolve silently.
+If **n**: do NOT commit, push, or resolve.
 
 ## Common mistakes
 
 - **Echoing AI text verbatim** — Translate to plain language. The Analysis section is YOUR independent analysis.
 - **Shallow analysis without reading diff/context** — For Critical/Major, you MUST read the git diff and function context before presenting.
 - **Agreeing with the reviewer by default** — Form your own judgment. If the concern doesn't apply, say so.
-- **Committing or pushing without asking** — Always ask the user in Step 6.
+- **Committing or resolving without asking** — Always ask the user in Step 6.
 - **Fixing without queuing first** — Go through ALL comments (Steps 3 + 4) before applying fixes in Step 5.
 - **Resolving threads without replying** — Every thread must get a reply explaining why it was resolved.
