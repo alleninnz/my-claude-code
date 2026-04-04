@@ -45,15 +45,8 @@ For **deduplicated groups**: replace header with `── 1/N ── [Major] ─�
 
 Omit `📍` and `**Diff:**` for PR-level issue comments.
 
-## User responses
+## User interaction
 
-After presenting each comment, show the default action that will be taken:
+This file covers analysis methodology and presentation only. The actual user interaction (auto-queue defaults, override syntax, batch confirmation) is defined in SKILL.md Steps 3 and 4.
 
-- If recommendation is **Fix**: show `[auto-queuing fix — say 'skip' to override]`
-- If recommendation is **Skip**: show `[auto-skipping — say 'fix' to override]`
-
-The user only needs to respond when they disagree. If the user doesn't respond, apply the default and move to the next comment. Expected responses:
-
-- **`fix`** — Queue for fixing (override skip recommendation). Record what to change. Next comment.
-- **`skip`** — Skip (override fix recommendation). Next comment.
-- Anything else — treat as discussion. Address the user's point, then present the comment again for a final `fix`/`skip` decision. If the user discusses again, make a judgment call and proceed.
+**Batch model:** Do not add per-comment prompts. Present all deep-analyzed comments first, then show a single defaults summary. The user responds once per batch. This applies to both Step 3 (Critical/Major) and Step 4 rescue (multiple rescued items are deep-analyzed, then presented as a batch with independent fix/skip defaults per item).

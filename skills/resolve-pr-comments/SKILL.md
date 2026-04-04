@@ -57,42 +57,65 @@ For each Critical/Major comment (or deduplicated group), perform deep analysis b
 
 Read `deep-analysis.md` for the methodology, severity re-evaluation rules, and presentation template.
 
-**Default-fix behavior:** When your recommendation is "Fix", the comment is auto-queued unless the user says `skip`. When your recommendation is "Skip", the comment is auto-skipped unless the user says `fix`. Present all Critical/Major comments in sequence, but the user only needs to respond when they disagree with your recommendation. After presenting each comment, wait briefly — if the user doesn't respond, apply the default.
+**Auto-queue defaults:** Critical/Major comments have been deep-analyzed, so their recommendations are high-confidence. After presenting all comments, show a defaults summary. "Fix" recommendations are auto-queued, "Skip" recommendations are auto-skipped:
+
+```text
+── Defaults ──────────────────────────
+Auto-queued:  #2 path traversal in removeNested (Fix)
+Auto-skipped: #1 breaking change .worktrees → worktrees (Skip)
+
+Override? (e.g., 'skip 2' or 'fix 1', 'ok' to confirm):
+```
+
+| User input | Behavior |
+|------------|----------|
+| `ok` or `done` | Confirm all defaults, proceed to Step 4 |
+| `skip 2` or `skip 1,2` | Override: skip those items, rest keep defaults |
+| `fix 1` or `fix 1,3` | Override: queue those items for fix, rest keep defaults |
+| `skip all` | Override all to skip |
+| `fix all` | Override all to fix |
+
+Users can combine overrides in one response (e.g., `fix 1, skip 2`).
 
 If all Critical/Major comments are downgraded during deep analysis, skip this step and merge them into Step 4.
 
 ## Step 4 — Medium/Low overview + rescue
 
-Present all Medium/Low comments (including any downgraded from Step 3) as a numbered overview. Default action is skip; user can rescue specific comments for deep review.
+Present all Medium/Low comments (including any downgraded from Step 3) as a numbered overview. Each entry shows the recommendation inline. **Default action is skip all** — Medium/Low items have not been deep-analyzed, so they require explicit opt-in. The user types `y` to accept all recommendations, or overrides specific items.
 
-Each entry must include: what the reviewer wants (plain language), your recommendation (fix/skip), and brief reasoning.
+Each entry must include: what the reviewer wants (plain language), your recommendation (Fix/Skip), and brief reasoning.
 
 ```text
-── Medium/Low (N comments, default skip) ──────
-1. [Medium] path/to/file.go:88 (coderabbit)
-   Reviewer wants: Add context cancellation check to prevent goroutine leak.
-   Recommendation: Fix — real concern, handler runs unbounded without cancellation.
+── Medium/Low (N comments, default skip all) ──────
+1. [Medium] path/to/file.go:88 (coderabbit) → Fix
+   Add context cancellation check — real concern, handler runs unbounded.
 
-2. [Low] path/to/model.go:33 (coderabbit)
-   Reviewer wants: Remove unused `opts` parameter from function signature.
-   Recommendation: Skip — matches existing codebase convention.
+2. [Low] path/to/model.go:33 (coderabbit) → Skip
+   Remove unused `opts` parameter — matches existing codebase convention.
 
-Enter numbers to rescue for deep review, or prefix with 'fix' to queue directly (type 'skip' to skip all):
+3. [Medium] path/to/handler.go:120 (cursor) → Fix
+   Check IsSkip in removeFlat — same bug pattern as flat rebase.
+
+── Recommended: fix 1,3 — skip 2
+Accept? (y to accept, 'fix 1,3' to fix, 'review 3' for deep review, 'done' to skip all):
 ```
+
+**Interaction rules:**
 
 | User input | Behavior |
 |------------|----------|
-| `skip` or `done` or `next` | All skip, proceed to Step 5 |
-| `1,3` | Deep-analyze selected using Step 3 process, rest skip |
-| `all` | Rescue all, present each using Step 3 |
-| `fix 2` or `fix 1,3` | Queue selected directly for fixing — no deep review |
-| `fix all` | Queue all directly — no deep review |
+| `y` or `yes` | Accept all recommendations (fix items marked Fix, skip items marked Skip) |
+| `done` or `skip all` | Skip all, proceed to Step 5 |
+| `fix 1` or `fix 1,3` | Queue selected for fix, skip the rest |
+| `fix all` | Queue all for fix |
+| `review 3` or `review 1,3` | Rescue selected for deep review (Step 3 process), skip the rest |
+| `review all` | Rescue all for deep review |
 
-**Fast-fix flow:** Comments queued via `fix` skip deep analysis entirely. The Step 4 summary is the analysis — no further investigation needed. Queued comments appear in the Step 5 fix list alongside any fixes from Step 3.
+**Combining:** Users can mix in one response (e.g., `fix 1, review 3` — fast-fix #1, deep-review #3, skip the rest). All tokens are keyword-prefixed (`fix`, `review`, `skip`) — bare numbers are not valid input.
 
-**Rescue flow:** Deep-analyze using `deep-analysis.md`, present with same template. If severity upgraded, show change in header (e.g., `[Medium → Major]`). User responds with `fix` or `skip`.
+**Fast-fix flow:** Comments queued via `fix` skip deep analysis entirely. The Step 4 summary is the analysis — no further investigation needed.
 
-**Mixed input:** Users can combine both in one response (e.g., `1, fix 2` — rescue #1 for deep review, fast-fix #2). Parse each token independently.
+**Rescue flow:** Items selected via `review` are deep-analyzed using `deep-analysis.md`, then presented as a batch with the same defaults model as Step 3 (auto-queue Fix recommendations, auto-skip Skip recommendations, user overrides with `ok`/`done`/`skip N`/`fix N`). This allows independent fix/skip decisions per rescued item.
 
 ## Step 5 — Apply queued fixes
 

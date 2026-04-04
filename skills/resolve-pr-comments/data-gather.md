@@ -118,4 +118,4 @@ Agent(
 )
 ```
 
-Parse the returned text to extract the structured data for Steps 2-7 of the main skill.
+Parse the returned text to extract the structured data for Steps 2-6 of the main skill.
