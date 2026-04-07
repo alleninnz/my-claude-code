@@ -111,6 +111,7 @@ For each: commentId → threadId
 
 ```python
 Agent(
+    name="pr-comments-gatherer",
     description="Gather PR review comments",
     prompt=<filled template above>,
     model="sonnet",
