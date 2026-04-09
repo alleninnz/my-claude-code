@@ -5,6 +5,6 @@ paths:
   - "**/go.sum"
 ---
 
-# Rule of Go playbook
+# Go Playbook
 
-When writing, reviewing, or refactoring Go code, invoke the `my-claude-code:go-playbook` skill via the Skill tool before proceeding.
+**YOU MUST invoke the `my-claude-code:go-playbook` skill via the Skill tool before writing, reviewing, or refactoring any Go code.** Do not skip this step — the playbook contains critical patterns for error handling, concurrency, testing, and Go 1.21+ features.

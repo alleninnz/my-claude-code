@@ -3,4 +3,4 @@ paths:
   - "**/*_test.go"
 ---
 
-When writing or modifying Go tests, invoke `my-claude-code:tdd-checkpoint` for one-test-at-a-time discipline with review checkpoints.
+**YOU MUST invoke `my-claude-code:tdd-checkpoint`** when writing or modifying Go tests. This enforces one-test-at-a-time discipline with review checkpoints. Do not batch-write multiple tests — write one, verify it, then proceed.
