@@ -15,7 +15,8 @@ Interactive review of all unresolved PR review comments — both AI reviewer (Co
 ## Tool constraints
 
 - **`gh` CLI only** — use `gh api` (via Bash tool) for all GitHub API calls. **NEVER** use GitHub MCP tools.
-- **NEVER** use `AskUserQuestion` — present your analysis and recommendation, then let the user type a freeform response (`fix`, `skip`, `1,3`, etc.).
+- **Critical/Major fix/skip decisions** — **MUST** use `AskUserQuestion` with choices `["Fix", "Skip"]`. This renders interactive buttons instead of plain text.
+- **Medium/Low batch interaction** — use freeform text (no `AskUserQuestion`). The complex interaction model (`fix 1, skip 2, review 3`) doesn't fit button choices.
 
 ## Step 1 — Gather and classify comments (silent)
 
@@ -58,35 +59,40 @@ Show the subagent's triage results. Only show sections that have content:
 For each comment (or deduplicated group):
 
 1. **MUST** perform deep analysis — read `deep-analysis.md` for methodology, severity re-evaluation rules, and the unified presentation template
-2. Present the comment using the unified template — every comment **MUST** include all fields: Problem, Wants, Diff, Analysis, Recommendation. **DO NOT** skip any field.
-3. **MUST** ask: `Fix or skip?` — **DO NOT** proceed to the next comment without the user's explicit decision. **DO NOT** auto-decide on the user's behalf.
+2. Present the comment using the unified template — every comment **MUST** include all fields: Problem, Wants, Analysis, Recommendation. **DO NOT** skip any field.
+3. **MUST** ask using `AskUserQuestion` with choices `["Fix", "Skip"]` — **DO NOT** proceed to the next comment without the user's explicit decision. **DO NOT** auto-decide on the user's behalf.
 4. Record the user's decision, move to next comment
 
 | User input | Behavior |
 |------------|----------|
-| `fix` | Queue for fix, move to next comment |
-| `skip` | Skip, move to next comment |
+| `Fix` (button) | Queue for fix, move to next comment |
+| `Skip` (button) | Skip, move to next comment |
 
 **Severity re-evaluation during deep analysis:** If a comment is downgraded below Major, **DO NOT** present it here — move it to Step 4 (Medium/Low batch). If all Critical/Major comments are downgraded, skip this step entirely.
 
-## Step 4 — Medium/Low batch review
+## Step 4 — Medium/Low paginated review
 
-**MUST** present all Medium/Low comments (including any downgraded from Step 3) using the unified template — but without Diff (no deep analysis prerequisite). Problem and Wants fields come from the data-gather subagent output. Analysis **MUST** be YOUR independent judgment — **DO NOT** just agree with the reviewer by default. Write it yourself based on the subagent's classification and the comment context.
+**MUST** present all Medium/Low comments (including any downgraded from Step 3) using the unified template. Problem and Wants fields come from the data-gather subagent output. Analysis **MUST** be YOUR independent judgment — **DO NOT** just agree with the reviewer by default. Write it yourself based on the subagent's classification and the comment context.
 
 Every Medium/Low comment **MUST** use the same template structure as Critical/Major. **DO NOT** collapse Medium/Low comments into one-line summaries. Reduced depth means shorter content per field, not fewer fields:
-- Problem: 1 sentence — **MUST** be present
-- Wants: 1 sentence — **MUST** be present
-- Analysis: 1 sentence — **MUST** be present
+- Problem: **MUST** be present — natural language explaining what's wrong with the code. Write as if explaining to a colleague sitting next to you.
+- Wants: **MUST** be present — natural language explaining what the reviewer wants done. Write as if explaining to a colleague sitting next to you.
+- Analysis: **MUST** be present — natural language with YOUR independent judgment. Write as if explaining to a colleague sitting next to you.
 - Recommendation: **MUST** be present
 - Original comment: **MUST** be present (collapsed)
-- No Diff section
 
-**MUST** present all comments as a numbered batch, then **MUST** show the defaults summary:
+### Pagination
 
-````text
-── Medium/Low (N comments) ──────────────────
+Present comments **5 per page**. If total ≤ 5, show as a single page (no page header needed).
 
-── 1/N ── [Medium] ── [coderabbit] ──────────
+Numbering is **global** across all pages (1–N), not reset per page.
+
+Each page **MUST** show its own defaults summary and confirmation prompt. User confirms the current page before the next page appears.
+
+```text
+── Medium/Low (13 comments) ── Page 1/3 ──────────
+
+── 1/13 ── [Medium] ── [coderabbit] ──────────
 📍 path/to/file.go:88
 
 **Problem:**
@@ -96,7 +102,7 @@ This handler doesn't check context cancellation — if the request times out, th
 Add a ctx.Done() case in the select to clean up on timeout.
 
 **Analysis:**
-Real concern — the handler runs unbounded with no cancellation check.
+The handler runs unbounded with no cancellation check — request timeouts leave zombie goroutines.
 
 **Recommendation:** Fix
 
@@ -104,7 +110,7 @@ Real concern — the handler runs unbounded with no cancellation check.
 ...
 </details>
 
-── 2/N ── [Low] ── [coderabbit] ──────────
+── 2/13 ── [Low] ── [coderabbit] ──────────
 📍 path/to/model.go:33
 
 **Problem:**
@@ -122,28 +128,38 @@ Matches existing codebase convention — other handlers keep unused opts.
 ...
 </details>
 
-── Defaults ──────────────────────────
+...
+
+── Page 1 Defaults ──────────────────────────
 Auto-queued:  #1 context cancellation in handler (Fix)
-Auto-skipped: #2 unused opts param (Skip)
+Auto-skipped: #2 unused opts param (Skip), #3 ... , #4 ... , #5 ...
 
-Override? (e.g., 'skip 1' or 'fix 2', 'ok' to confirm):
-````
+Override? (e.g., 'skip 1' or 'fix 2', 'ok' to confirm page):
+```
 
-**Interaction rules:**
+After user confirms, lock decisions for current page and show next:
+
+```text
+── Medium/Low ── Page 2/3 ──────────
+
+── 6/13 ── ...
+```
+
+Last page confirmed → proceed to Step 5.
+
+### Interaction rules (per page)
 
 | User input | Behavior |
 |------------|----------|
-| `ok` or `done` | Confirm all defaults, proceed to Step 5 |
-| `skip N` or `skip 1,2` | Override to skip, rest keep defaults |
-| `fix N` or `fix 1,3` | Override to fix, rest keep defaults |
-| `skip all` | Override all to skip |
-| `fix all` | Override all to fix |
-| `review N` or `review 1,3` | Promote selected to deep analysis (read diff + function context), re-present at Critical/Major depth with immediate fix/skip per comment |
-| `review all` | Promote all to deep analysis |
+| `ok` or `done` | Confirm current page defaults, show next page (or proceed to Step 5 if last page) |
+| `skip N` or `skip 1,2` | Override to skip (current page only), rest keep defaults |
+| `fix N` or `fix 1,3` | Override to fix (current page only), rest keep defaults |
+| `skip all` | Override all on current page to skip |
+| `fix all` | Override all on current page to fix |
+| `review N` or `review 1,3` | Promote selected (current page only) to deep analysis, re-present one at a time at Critical/Major depth. Each gets an immediate `AskUserQuestion` with choices `["Fix", "Skip"]` — same as Step 3 |
+| `review all` | Promote all on current page to deep analysis |
 
 Users can combine in one response (e.g., `fix 1, skip 2, review 3`). All tokens are keyword-prefixed (`fix`, `review`, `skip`).
-
-**`review N` flow:** Deep-analyze using `deep-analysis.md`, then re-present each promoted comment one at a time at Critical/Major depth (with Diff). Each gets an immediate `Fix or skip?` prompt — same as Step 3.
 
 ## Step 5 — Apply queued fixes
 
@@ -173,11 +189,11 @@ If **n**: **DO NOT** commit, push, or resolve.
 
 ## Common mistakes
 
-- **Echoing AI text verbatim** — Problem and Wants **MUST** use natural conversational language. **NEVER** echo reviewer phrasing like "Consider adding..." or "It is recommended that...". The Analysis section is YOUR independent judgment.
-- **Skipping Problem or Wants fields** — Every comment at every severity level **MUST** include Problem and Wants. These fields are NOT optional. DO NOT skip them, even for Low severity.
+- **Echoing AI text verbatim** — Problem, Wants, and Analysis **MUST** use natural conversational language. **NEVER** echo reviewer phrasing like "Consider adding..." or "It is recommended that...". Analysis is YOUR independent judgment, written in the same conversational tone as Problem and Wants.
+- **Skipping Problem, Wants, or Analysis fields** — Every comment at every severity level **MUST** include Problem, Wants, and Analysis. These fields are NOT optional. DO NOT skip them, even for Low severity.
 - **Collapsing Medium/Low to one-line summaries** — Medium/Low **MUST** use the same template structure as Critical/Major. Reduced depth means shorter sentences, NOT fewer fields.
 - **Batching Critical/Major comments** — Critical/Major **MUST** be presented one at a time. **DO NOT** show multiple Critical/Major comments in a single message.
-- **Shallow analysis without reading diff/context** — For Critical/Major, you **MUST** read the git diff and function context before presenting. **DO NOT** analyze from the comment text alone.
+- **Analyzing without reading the code** — For Critical/Major, you **MUST** read the git diff and function context before writing Analysis. The fact that Diff is not a separate display field does NOT mean you can skip reading the code. **DO NOT** analyze from the comment text alone.
 - **Agreeing with the reviewer by default** — **MUST** form your own independent judgment. **DO NOT** default to agreeing with the reviewer. If the concern doesn't apply, say so explicitly.
 - **Committing or resolving without asking** — **MUST** ask the user in Step 6. **NEVER** commit, push, or resolve threads without explicit confirmation.
 - **Fixing without queuing first** — **MUST** go through ALL comments (Steps 3 + 4) before applying fixes in Step 5. **DO NOT** start fixing during the review steps.

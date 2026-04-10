@@ -78,7 +78,7 @@ Deduplicate: group by same file / adjacent lines (±5) / same concern. Group sev
 
 For each comment/group, you MUST generate all three fields — DO NOT skip any:
 - **Problem**: MUST be natural language explaining what's wrong with the code. Write as if explaining to a colleague sitting next to you. DO NOT echo AI reviewer phrasing ("Consider adding...", "It is recommended that...", "Potential issue with..."). DO NOT use hedging language ("may", "could potentially", "it might be beneficial to").
-- **Wants**: MUST state what the reviewer wants done about it, in natural language. Same conversational style. DO NOT copy the reviewer's suggestion verbatim.
+- **Wants**: MUST be natural language explaining what the reviewer wants done. Write as if explaining to a colleague sitting next to you. DO NOT copy the reviewer's suggestion verbatim.
 - **Summary**: One-line plain-language summary (used for defaults summary display).
 
 ## Step 6: Build thread map
