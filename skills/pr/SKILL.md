@@ -21,8 +21,6 @@ Smart PR creation and updates with diff-based description generation.
 5. Generate body (adaptive):
    - Small diff (<100 changed lines): 1-3 bullet summary
    - Larger diff: `## Summary` (3-5 bullets) + `## Test plan` (checklist)
-   - Include `Closes <ISSUE-ID>` before the footer
-   - Footer: `Generated with [Claude Code](https://claude.com/claude-code)`
 6. Create: `gh pr create --draft --title "<title>" --body "<body>"`
 
 ## update — Sync changes and update PR description
