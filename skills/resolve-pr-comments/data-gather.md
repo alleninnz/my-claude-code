@@ -73,8 +73,8 @@ Classify each issue comment into one of three buckets:
    - Bot comments with concrete inline feedback outside the CodeRabbit walkthrough (e.g., separate `coderabbitai` actionable blocks)
 
 **MUST exclude from the actionable bucket (use as staleness signals only):**
-- Comments where `user == pr_meta.author` — these are the author's own status updates, replies, or prior skill-generated Step 6 resolutions. They are not review items. Surface them as `author_followups` signals against the reviewer comments they respond to, never as fresh Fix/Skip candidates.
-- Comments authored by the session's GitHub login (same reasoning) — these are typically the skill's own prior Step 6 replies.
+- Comments where `user == pr_meta.author` — these are the author's own status updates or replies. They are not review items. Surface qualifying ones as `author_followups` signals (see below), never as fresh Fix/Skip candidates.
+- Comments whose body contains the marker `<!-- resolve-pr-comments:reply -->` — these are the skill's own prior Step 6 replies (any operator). Drop regardless of author. This marker-based filter survives operator change: a maintainer processing a contributor branch keeps their legitimate PR-level review comments while prior skill replies are suppressed. **DO NOT** fall back to filtering by the session's GitHub login — that blanket-drops real human reviews when the operator isn't the PR author.
 
 **When in doubt, include it.** Over-including a conversational comment is recoverable (easy Skip in Step 5); dropping a substantive human review at fetch time is silent and invisible to the user. The skill has already been bitten by this — **NEVER** reintroduce a blanket `user.type == "Bot"` filter here.
 
@@ -91,7 +91,7 @@ For **each issue comment classified as actionable** (bucket 3 above), fetch thes
    ```
    Flag if the original reviewer or `pr_meta.author` left `+1` / `rocket` / `hooray`.
 
-2. **Subsequent author replies** (discussion hint): from the issue-comments list already fetched, include any issue comment where `created_at > target.created_at` AND (`user == pr_meta.author` OR body mentions the reviewer by `@handle` OR body quotes the original). Use `pr_meta.author` — **DO NOT** guess who the author is.
+2. **Subsequent author replies** (discussion hint): from the issue-comments list already fetched, include any issue comment where `created_at > target.created_at` AND `user == pr_meta.author` AND (body mentions the reviewer by `@handle` OR body quotes the original). **MUST NOT** attach on bare author match alone — without a mention or quote there's no evidence the comment addresses *this* specific review, and on a PR with multiple actionable reviews every later author comment would falsely attach to every earlier review and mislead the user into skipping live feedback. Coarse "author was active" activity is already captured by `pr_updated_since_comment`. Use `pr_meta.author` — **DO NOT** guess who the author is.
 
 3. **PR activity after the comment** (coarse work-done hint): compare `pr_meta.updated_at > target.created_at`. **MUST NOT** use commit timestamps (`committer.date` / `author.date`) — they are preserved through rebase/cherry-pick and will under-report post-comment work. The PR-level `updated_at` is coarse (bumps on every comment too) but robust.
 
