@@ -138,12 +138,42 @@ Merge intent + Phase 3 output. Read `output-format.md` for the prompt template.
 
 Apply all three checks in order; a single finding may be modified by 1, re-tagged by 2, and routed by 3.
 
-**Section sources in layer 1:**
+**Layer 1 section data sources:**
 
-- `Already in place`: merged from Phase 1's linked-PR context (always, regardless of triage mode) AND Full-mode `[existing]` findings. Omit only if both are empty.
-- `Non-scope`: paraphrased from (a) Raw ticket claims' scope statements (Non-goals, "do NOT change X", explicit scope-boundary phrases) and (b) any Non-scope language already present in the issue body. Domain-level only, code-level identifiers stripped. This channel ensures scope constraints still reach `opsx:new` even though Raw claims itself is never rendered. **Filter (applies to BOTH sources)**: drop any scope statement — whether originally from Raw claims or from the issue body — whose substance matches a `[mismatch:scope]` finding (Full) or a `[scope]` ⚠️ Verified entry (Narrow). The filter matches on paraphrased substance, not verbatim text. It considers ONLY scope-type mismatches; `[mismatch:claim]` and `[claim]` ⚠️ entries are about wrong symbol names and never affect Non-scope. The contradicted boundary still surfaces in layer 2's `⚠️ Ticket-vs-code mismatch` for user visibility.
-- `This change:`: issue points (from the issue body) + Raw claims' explicit asks paraphrased to domain-level (always included, all modes) + Full-mode `[ticket-requested]` (untagged — these are GAP refinements beyond the literal asks) + Full-mode `[must-include]` tagged `(discovered)`. Full-mode findings with the `+breaking` modifier render here AND in `Breaking changes`. **Deduplication (by substance, across all three sources)**: issue points and explicit asks both come from the same ticket body, so direct merge duplicates acceptance-criteria bullets; additionally, Full's `[ticket-requested]` findings (gap refinements) can substantively match explicit asks. Before rendering, dedupe every pair by domain-level substance and keep the MOST SPECIFIC formulation: prefer Full-mode refinement > explicit ask paraphrase > issue point. **Already-satisfied filter**: drop any bullet whose substance matches an item in `Already in place` (either Phase 1 linked-PR context showing the work has landed, or Full-mode `[existing]` finding). The same deliverable should not appear as both completed (in `Already in place`) and still-requested (in `This change:`) — that would send `opsx:new` to re-plan landed work. If every source is fully covered by `Already in place`, the ticket is effectively done; Phase 5 surfaces this to the user rather than generating a trivial prompt. **Filter (mirrors Non-scope)**: for any bullet — issue point or explicit-ask paraphrase — whose substance matches a `[mismatch:claim]` finding (Full) or a `[claim]` ⚠️ Verified entry (Narrow): try to rewrite against the subagent's corrected target. If rewrite is possible, replace the bullet. If rewrite is NOT possible (corrected target unclear, or subagent only flagged the mismatch without identifying a valid replacement), **STOP** — do NOT silently drop a required deliverable. Phase 5 treats this as a hard stop (same path as un-sanitizable Refined intent): present the original bullet + the mismatch to the user with "Ticket's core deliverable cannot be mapped to a valid target — clarify the ticket and re-run".
-- `Breaking changes + Expand/Migrate/Contract phase`: domain-level paraphrases of Phase 1's `breaking` AND `breaking-uncertain` explicit asks + Full-mode `[breaking]` findings + any `+breaking`-modified `[ticket-requested]` / `[must-include]` findings (gap refinements OR phasing refinements of literal asks). **Full-mode override**: when Full runs, its grounded findings authoritatively replace Phase 1's pre-grounding tentative classifications ONLY when Full produces an explicit signal. (a) For any Phase 1 breaking ask whose substance matches a Full-mode `[breaking]` or `+breaking` finding — drop the Phase 1 bullet in favor of Full's (Full has phasing Phase 1 couldn't supply). (b) For Phase 1 asks that Full explicitly confirms non-breaking: Full must emit a `[verified:claim]` or `[verified:scope]` entry noting "confirmed non-breaking" — only then drop from `Breaking changes`. Silent Full passes do NOT count as confirmation (code-exploration.md tells Full not to re-emit literal asks without refinements, so silence is ambiguous). (c) For Phase 1 `breaking-uncertain` asks where Full is silent, KEEP the bullet with the uncertainty suffix — silence leaves the guess standing. (d) In Narrow/Skip modes (no Full grounding), keep all Phase 1 bullets with uncertainty suffixes per output-format.md. **Already-satisfied filter (mirrors `This change:`)**: drop any breaking bullet whose substance matches an item in `Already in place` — same reasoning, landed schema/proto migrations shouldn't re-appear as planned rollout work. **Filter (mirrors `This change:` and `Non-scope`)**: for any breaking bullet whose substance matches a `[mismatch:claim]` finding (Full) or a `[claim]` ⚠️ Verified entry (Narrow): try to rewrite against the corrected target AND re-evaluate the breaking classification — if the corrected target is non-breaking (internal helper, not a public contract), move the rewritten bullet to `This change:` rather than keeping it here. If rewrite is NOT possible, apply the same **STOP** rule as `This change:` — the ticket's rollout-sensitive deliverable cannot be mapped to a valid target, so don't generate a prompt that silently omits it. In Narrow mode specifically, a plain `[claim]` mismatch on a breaking ask also triggers STOP if it would leave `Breaking changes` empty (Narrow has no `+breaking` findings to fall back on). Omit the section only when all sources were legitimately empty (not when filter dropped everything).
+| Section | Inputs | Omit condition |
+|---|---|---|
+| `Already in place` | Phase 1 linked-PR context (all modes) + Full `[existing]` | both empty |
+| `Non-scope` | (a) Raw claims scope statements (Non-goals, "do NOT change X", scope-boundary phrases) + (b) issue-body Non-scope prose | no surviving entries after Filter 2 |
+| `This change:` | issue points (issue body) + Raw claims' explicit asks paraphrased + Full `[ticket-requested]` (untagged; gap refinements beyond literal asks) + Full `[must-include]` tagged `(discovered)` | no surviving bullets after Filters — but STOP C fires first when Filter 5 drains BOTH sections; "empty + vague ticket" omits, "empty + filter-drained" STOPs |
+| `Breaking changes + Expand/Migrate/Contract phase` | Phase 1 `breaking` / `breaking-uncertain` asks paraphrased + Full `[breaking]` + `+breaking`-modified `[ticket-requested]` / `[must-include]` | no surviving bullets after Filters — Filter 3's non-breaking rewrite moving bullets to `This change:` is a legitimate drain (no STOP); STOP C/D handle the problematic drains |
+
+All layer 1 content is domain-level; code-level identifiers are stripped by Reader pass step 1 (sanitization). `+breaking`-modified findings render in BOTH `This change:` (as `(discovered)`) AND `Breaking changes`.
+
+**Filter chain (applied in this order — downstream filters consume upstream output):**
+
+1. **Tag sanity check** — Reader pass step 2 above. Re-tag mis-classified findings (e.g. `[must-include]` → `[existing]`) BEFORE any filter runs. Downstream filters see final tags.
+2. **Scope-mismatch filter** (→ `Non-scope`) — drop any scope statement whose paraphrased substance matches a `[mismatch:scope]` (Full) or `[scope] ⚠️` Verified entry (Narrow). `[mismatch:claim]` / `[claim] ⚠️` do NOT affect this filter (they concern symbol names, not boundaries). Dropped statements still surface in layer 2 `⚠️ Ticket-vs-code mismatch`.
+3. **Claim-mismatch filter** (→ `This change:` AND `Breaking changes`) — for each bullet whose substance matches a `[mismatch:claim]` (Full) or `[claim] ⚠️` (Narrow): rewrite against the subagent's corrected target. For `Breaking changes` bullets, additionally re-evaluate breaking status on the corrected target — if the corrected target is non-breaking (internal helper, not a public contract), MOVE the rewritten bullet from `Breaking changes` to `This change:`. If no valid rewrite target exists → **STOP A**.
+4. **Breaking-mode override** (→ `Breaking changes`) — resolve Phase 1 pre-grounding classifications against Full's grounded findings:
+   - (a) Phase 1 breaking ask matches Full `[breaking]` / `+breaking` by substance → drop Phase 1 bullet, keep Full's (Full supplies Expand/Migrate/Contract phasing Phase 1 couldn't).
+   - (b) Phase 1 ask that Full explicitly confirms non-breaking (via a `[verified:claim]` / `[verified:scope]` noting "confirmed non-breaking") → drop from `Breaking changes`. Silent Full passes do NOT count as confirmation (Full is instructed not to re-emit literal asks without refinements).
+   - (c) Phase 1 `breaking-uncertain` ask, Full silent → KEEP with `(breaking classification uncertain — run Full for confirmation)` suffix.
+   - (d) Narrow/Skip modes (no Full grounding) → KEEP all Phase 1 bullets with uncertainty suffixes per output-format.md.
+5. **Already-satisfied filter** (→ `This change:` AND `Breaking changes`) — drop any bullet whose substance matches an `Already in place` item (Phase 1 linked-PR context OR Full `[existing]`). Track whether ANY bullet was dropped by this filter (needed for STOP C's disambiguation between "filter drained real deliverables" vs "vague ticket had no deliverables to begin with").
+6. **Deduplication** (→ `This change:`) — for triples {issue point, explicit-ask paraphrase, Full `[ticket-requested]`} matching by substance, keep the MOST SPECIFIC: prefer Full refinement > explicit-ask paraphrase > issue point. For `Breaking changes` {Phase 1 ask paraphrase, Full `[breaking]` / `+breaking`} matching by substance, prefer Full (Full has phasing).
+7. **Narrow-mode Breaking-section guard** (→ STOP only) — if a Narrow-mode plain `[claim] ⚠️` mismatch survived Filter 3's rewrite attempt on a `Breaking changes` bullet but would leave `Breaking changes` empty (no `+breaking` findings to fall back on; Narrow can't supply Expand/Migrate/Contract phasing) → **STOP D**.
+8. **Sanitization** — Reader pass step 1 above. LAST step: strip code-level identifiers from surviving layer-1 content. Un-sanitizable required findings move to layer 2 `⚠️ Un-sanitizable findings` per the Reader pass failure path.
+
+**Phase 4 STOP inventory** (single source of truth; Phase 5's STOP list mirrors these — update both together):
+
+| ID | Condition | Phase 5 rendering |
+|---|---|---|
+| A | Filter 3 (claim-mismatch) has no valid rewrite target for a required `This change:` or `Breaking changes` bullet | Clarification required: show original bullet + `[mismatch:claim]` / `[claim] ⚠️` entry |
+| B | Reader pass step 1 cannot sanitize the `Refined intent` (identifiers load-bearing for meaning) | Clarification required: render un-paraphrased Refined intent + mismatch notes |
+| C | **Ticket already done**: after Filter 5, `This change:` AND `Breaking changes` are BOTH empty AND Filter 5 dropped at least one bullet (anchor against vague tickets whose sections were empty from the start) | Show `Already in place` items, tell user ticket appears complete |
+| D | Filter 7 triggered (Narrow `[claim] ⚠️` empties `Breaking changes`, no phasing fallback) | Clarification required: recommend Full re-run |
+| E | Subagent returned `⚠️ Refined intent` (whole-premise failure) from Full or Narrow | Render Refined intent + mismatch notes |
+| F | Narrow returned `[scope] ⚠️ (implies-breaking)` (undeclared breaking change; Narrow can't phase it) | Render the specific Verified entry; recommend Full re-run |
 
 **Mode-specific annotations:**
 
@@ -155,22 +185,29 @@ Apply all three checks in order; a single finding may be modified by 1, re-tagge
 
 ## Phase 5: Present & Act
 
-**STOP check first**: if an earlier phase signaled a hard stop, do NOT render a fenced prompt. Hard-stop conditions:
-- Full or Narrow subagent returned a `⚠️ Refined intent` whole-premise failure
-- Phase 4's reader pass couldn't sanitize the Refined intent per step 1's failure path
-- Narrow returned a `[scope] ⚠️ (implies-breaking)` entry (breaking change discovered beyond ticket's declared scope — Narrow can't supply Expand/Migrate/Contract phasing)
-- Phase 4's `This change:` filter couldn't rewrite a claim-mismatched bullet against a valid corrected target (ticket's core deliverable is un-mappable)
-- Phase 4's `Breaking changes` filter couldn't rewrite a claim-mismatched bullet against a valid corrected target, OR Narrow mode's plain `[claim]` mismatch on a breaking ask would leave `Breaking changes` empty (no `+breaking` findings to fall back on)
+**STOP check first**: if an earlier phase signaled a hard stop, do NOT render a fenced prompt. The authoritative list is Phase 4's **STOP inventory** table — conditions A–F. This section mirrors that table; if they drift, Phase 4's table wins.
 
-When any of these fire:
-- Show the user WHICH stop condition triggered and WHY, with the specific content:
-  - ⚠️ Refined intent (whole-premise failure): render the Refined intent text + any layer 2 mismatch notes
-  - Unsanitizable Refined intent: render the un-paraphrasable Refined intent (with its code-level identifiers kept, since layer 1 is not being generated) + the mismatch notes
-  - `[scope] ⚠️ (implies-breaking)`: render the specific Verified entry — which scope boundary was infeasible AND what external contract would break if the fix crossed it — so the user knows exactly what needs clarification or Full-mode re-run
-  - `This change:` / `Breaking changes` claim-mismatch with no valid rewrite: render the original bullet that couldn't be mapped + the `[mismatch:claim]` / `[claim]` ⚠️ entry showing what's wrong
-- Skip the `AskUserQuestion` for `Run opsx:new` / `Edit prompt` / `Just copy` — there is no prompt to run or copy
-- Tell the user: "Ticket needs clarification before opsx-prompt can generate a valid prompt. Review the specific stop reason above and either update the ticket, re-run with Full mode (if the reason was `(implies-breaking)` or a mismatch Narrow can't resolve), or clarify the ambiguous claim."
-- End the skill here.
+- **A**: claim-mismatch on required `This change:` / `Breaking changes` bullet, no valid rewrite
+- **B**: unsanitizable `Refined intent`
+- **C**: ticket already done (Filter 5 drained `This change:` AND `Breaking changes`, AND at least one bullet was actually dropped — vague tickets whose sections were empty from the start do NOT trigger this)
+- **D**: Narrow-mode `[claim] ⚠️` empties `Breaking changes` with no `+breaking` fallback
+- **E**: `⚠️ Refined intent` whole-premise failure
+- **F**: Narrow-mode `[scope] ⚠️ (implies-breaking)`
+
+Branch on the STOP reason:
+
+**Clarification-required STOPs** (A, B, D, E, F) — ticket has a problem that needs human intervention:
+- **E**: render the `Refined intent` text + any layer 2 mismatch notes
+- **B**: render the un-paraphrasable `Refined intent` (identifiers kept, since layer 1 isn't being generated) + mismatch notes
+- **F**: render the specific `[scope] ⚠️ (implies-breaking)` entry — which boundary was infeasible + what external contract would break — so the user can clarify or re-run Full
+- **A**: render the original un-mappable bullet + the `[mismatch:claim]` / `[claim] ⚠️` entry
+- **D**: render the Narrow `[claim] ⚠️` entry on the breaking ask + note that Narrow can't supply phasing; recommend Full re-run
+
+For these: skip the `AskUserQuestion`, tell the user: "Ticket needs clarification before opsx-prompt can generate a valid prompt. Review the specific stop reason above and either update the ticket, re-run with Full mode (if the reason was F or D), or clarify the ambiguous claim." End the skill.
+
+**Ticket-already-done STOP** (C) — ticket is effectively complete, no action needed:
+- Render the `Already in place` items (Phase 1 linked PRs + any Full `[existing]` findings) so the user sees what landed.
+- Skip the `AskUserQuestion`. Tell the user: "This ticket's deliverables are all satisfied by the items above — no opsx:new prompt is needed. If you believe additional work is required, clarify the ticket's scope and re-run opsx-prompt." End the skill.
 
 Otherwise, proceed with the normal flow:
 
