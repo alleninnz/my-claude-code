@@ -1,9 +1,11 @@
 ---
 paths:
   - "**/*.sql"
-  - "**/schema/**"
   - "**/migrations/**"
   - "**/migrate/**"
+  - "**/db/**"
+  - "**/database/**"
+  - "**/ent/schema/**"
 ---
 
 # MySQL Aurora Playbook
