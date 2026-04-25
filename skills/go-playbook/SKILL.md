@@ -1,55 +1,54 @@
 ---
 name: go-playbook
-description: Use when writing, reviewing, or refactoring Go code — covers error handling, concurrency, iterators, interfaces, testing, performance, gRPC, database patterns, and Go 1.21-1.26 features.
+description: Use when a Go task needs version-specific APIs, idiomatic error/concurrency/testing patterns, package/interface design tradeoffs, performance tuning, gRPC/protobuf, database/sql, Ent, or tooling decisions.
 ---
 
 # Go Playbook (1.21-1.26)
 
-Idiomatic Go patterns and production-ready recipes. Evidence-first: every pattern includes runnable code.
+Idiomatic Go patterns and production-ready recipes. Load only the reference section needed for the current task.
 
 ## When to Use
 
-- Writing or reviewing Go code (error handling, concurrency, interfaces)
+- Writing or reviewing Go code where the right idiom is not obvious
 - Designing packages, structs, or dependency injection
 - Optimizing performance (PGO, GC tuning, allocations)
 - Writing tests (table-driven, fuzz, integration, benchmarks)
 - Working with gRPC/Protobuf, databases, or structured logging
 
-**Not for:** Non-Go languages, generic algorithms unrelated to Go idioms, or ops/infrastructure concerns.
+**Not for:** Non-Go languages, generic algorithms unrelated to Go idioms, trivial syntax questions, or repos where nearby code already gives a clear pattern.
+
+## Version Gate
+
+Before using version-specific APIs, check the repo's `go.mod` `go` directive. If the module targets an older Go version, use the fallback pattern already shown nearby or the older equivalent in the reference.
 
 ## Quick Reference
 
 | Idiom | Pattern | Section |
 |-------|---------|---------|
-| Error matching | `errors.AsType[*T](err)` (1.26) | Error Handling |
-| Error wrapping | `fmt.Errorf("context: %w", err)` | Error Handling |
-| Goroutine launch | `wg.Go(func() { ... })` (1.25) | Concurrency |
-| Bounded parallelism | `conc/pool` with `WithMaxGoroutines` | Concurrency |
-| Iterators | `iter.Seq[V]`, `iter.Seq2[K,V]` (1.23) | Iterators |
-| HTTP routing | `mux.HandleFunc("GET /users/{id}", h)` (1.22) | Iterators |
-| Test concurrency | `testing/synctest` virtual time (1.25) | Testing |
-| Benchmarks | `b.Loop()` (1.24) | Testing |
-| Logging | `slog` with `NewMultiHandler` (1.26) | Logging |
-| Container perf | Auto GOMAXPROCS from cgroup (1.25) | Performance |
-| GC | Green Tea GC default (1.26) | Performance |
-| Lint | `golangci-lint v2` with `go tool` (1.24) | Tooling |
-| Modernize | `go fix` with dozens of fixers (1.26) | Tooling |
+| Error matching | `errors.AsType[*T](err)` (1.26) | `references/errors.md` |
+| Error wrapping | `fmt.Errorf("context: %w", err)` | `references/errors.md` |
+| Goroutine launch | `wg.Go(func() { ... })` (1.25) | `references/concurrency.md` |
+| Bounded parallelism | `conc/pool` with `WithMaxGoroutines` | `references/concurrency.md` |
+| Iterators | `iter.Seq[V]`, `iter.Seq2[K,V]` (1.23) | `references/version-notes.md` |
+| HTTP routing | `mux.HandleFunc("GET /users/{id}", h)` (1.22) | `references/version-notes.md` |
+| Test concurrency | `testing/synctest` virtual time (1.25) | `references/testing.md` |
+| Benchmarks | `b.Loop()` (1.24) | `references/testing.md` |
+| Logging | `slog.NewMultiHandler` (1.26) | `references/logging.md` |
+| Container perf | Auto GOMAXPROCS from cgroup (1.25) | `references/performance.md` |
+| GC | Green Tea GC default (1.26) | `references/performance.md` |
+| Lint | `golangci-lint v2` with `go tool` (1.24) | `references/tooling.md` |
 
-## Full Reference
+## Reference Routing
 
-See @reference.md for detailed patterns, code examples, and version-specific guidance covering:
+Read only the file that matches the current work:
 
-- **Error Handling** — wrapping, sentinels, custom types, `errors.AsType[T]` (1.26), anti-patterns
-- **Concurrency** — `WaitGroup.Go` (1.25), conc, errgroup, context, goroutine leaks, graceful shutdown
-- **Iterators & Range** — range-over-int/func (1.22-1.23), enhanced ServeMux, pull iterators
-- **Go 1.24-1.26 Features** — tool directives, `b.Loop()`, `t.Context()`, `omitzero`, Swiss tables, `new(expr)`, self-referential generics, Green Tea GC, `go fix` modernizers
-- **Interface Design** — consumer-defined interfaces, generics vs interfaces, optional behavior
-- **Package Organization** — flat structure, internal/, dependency injection, workspaces
-- **Struct Design** — functional options, method receivers, zero value usefulness
-- **Testing** — table-driven, mockery v3, fuzz, testcontainers, `synctest` (1.25), `ArtifactDir` (1.26)
-- **Structured Logging** — slog setup, child loggers, groups, `MultiHandler` (1.26), redaction
-- **Performance** — PGO, container-aware GOMAXPROCS (1.25), Green Tea GC (1.26), sync.Pool, preallocation
-- **gRPC & Protobuf** — buf toolchain, error handling, interceptors, health checks
-- **Database Patterns** — ent ORM, connection pool, transactions
-- **Tooling** — golangci-lint v2, `go fix` modernizers (1.26), essential commands
-- **Anti-Patterns** — goroutine leaks, concurrent maps, interface pollution, context in structs
+- `references/errors.md` — wrapping, sentinels, custom types, `errors.AsType[T]`, duplicate logging
+- `references/concurrency.md` — `WaitGroup.Go`, conc, `errgroup`, context, goroutine leaks, graceful shutdown
+- `references/version-notes.md` — Go 1.22-1.26 APIs: iterators, ServeMux, tool directives, `omitzero`, flight recorder, release highlights
+- `references/design.md` — interfaces, packages, dependency injection, structs, method receivers, zero values
+- `references/testing.md` — table-driven tests, `testing/synctest`, mockery v3, fuzzing, testcontainers, artifacts
+- `references/logging.md` — slog setup, child loggers, groups, `NewMultiHandler`, redaction
+- `references/performance.md` — PGO, GOMAXPROCS, Green Tea GC, memory limits, `sync.Pool`, allocation analysis
+- `references/grpc-protobuf.md` — buf, gRPC status errors, rich errors, interceptors, health checks
+- `references/database.md` — Ent, `database/sql` pools, transactions
+- `references/tooling.md` — golangci-lint v2, formatting, essential commands, anti-patterns

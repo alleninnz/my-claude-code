@@ -1,9 +1,9 @@
 ---
 name: opsx-prompt
 description: >
-  Use when generating an opsx:new prompt from a Linear issue or short freeform
-  request and the goal is to capture the ticket's why/what without expanding
-  scope by default.
+  Use when the user asks for an opsx:new prompt from a Linear issue or short
+  freeform change request, or asks for deep review, deep discovery, extra
+  confidence, a second look, or missed considerations before opsx:new.
 ---
 
 # Opsx Prompt Generator

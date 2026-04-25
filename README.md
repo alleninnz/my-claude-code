@@ -1,19 +1,21 @@
 # my-claude-code
 
-Claude Code plugin for Go development — agents, skills, and commands.
+Claude Code and Codex plugin for Go development — shared skills, workflow helpers, and Claude Code-specific rules.
 
 ## Install
+
+### Claude Code
 
 ```bash
 /plugin marketplace add alleninnz/my-claude-code
 /plugin install my-claude-code
 ```
 
-## Commands
+### Codex
 
-| Command | Agent | What it does |
-|---------|-------|-------------|
-| `/go-simplify` | go-simplifier | Simplify Go code: staticcheck fixes, structural + architectural cleanup |
+This repo includes a Codex manifest at `.codex-plugin/plugin.json`. Install it as a local Codex plugin from this checkout using your Codex plugin installation flow.
+
+The shared `skills/` directory is available to Codex. Claude Code-specific `rules/` are documented in this repo but are not automatically interpreted by Codex.
 
 ## Skills
 
@@ -23,11 +25,14 @@ Claude Code plugin for Go development — agents, skills, and commands.
 | `resolve-pr-comments` | Interactive per-comment review of AI reviewer feedback on current PR |
 | `write-articles` | Technical articles, voice capture, evidence-first writing |
 | `go-playbook` | Go 1.21-1.26 patterns — error handling, concurrency, testing, performance, gRPC |
+| `go-simplify` | Simplify Go code while preserving behavior; shared Claude Code/Codex skill |
 | `mysql-aurora-playbook` | MySQL 8.0 & Aurora MySQL 3 patterns — indexes, types, queries, DDL, monitoring |
 | `skill-guiding` | Browse and discover installed skills from user directory and marketplace plugins |
 | `opsx-prompt` | Generate ticket-first `opsx:new` prompts from Linear issues, with optional deeper review |
 
 ## Rules
+
+Claude Code only.
 
 > **Note:** Claude Code plugins cannot distribute rules yet. Run `npm run install:rules` to copy these files into `~/.claude/rules/` for them to take effect.
 
