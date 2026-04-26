@@ -1,11 +1,13 @@
 ---
 name: mysql-aurora-playbook
-description: Use when writing MySQL queries, designing Aurora schemas, optimizing indexes, troubleshooting slow queries, fixing deadlocks, planning schema migrations, or tuning Aurora connection pools and failover.
+description: Use when writing or reviewing MySQL 8.0 or Aurora MySQL 3 SQL, indexes, UUID storage, cursor pagination, EXPLAIN, HLL, deadlocks, MDL, gh-ost, pt-osc, RDS Proxy, JDBC Wrapper, slow query logs, schema migrations, connection pools, or Aurora failover.
 ---
 
 # MySQL 8.0 & Aurora MySQL 3 Playbook
 
-Aurora MySQL 3.x = community MySQL 8.0 (e.g., 3.04.x = 8.0.28 LTS, 3.08.x = 8.0.39).
+Use this as a router. Load only the reference file or files needed for the current database task.
+
+Aurora MySQL 3.x is MySQL 8.0-compatible, but exact feature behavior depends on the Aurora minor version. Check `select aurora_version();` or `select @@aurora_version;` before relying on version-gated features.
 
 ## When to Use
 
@@ -16,34 +18,32 @@ Aurora MySQL 3.x = community MySQL 8.0 (e.g., 3.04.x = 8.0.28 LTS, 3.08.x = 8.0.
 - Configuring Aurora endpoints, serverless v2, connection pools
 - Setting up monitoring, alerts, or slow query logging
 
-**Not for:** PostgreSQL, MariaDB-specific features, DynamoDB, or application-layer ORM patterns.
+**Not for:** PostgreSQL, MariaDB-specific features, DynamoDB, or pure application-layer ORM patterns.
+
+For Caruso Ent schema or migration implementation, use `caruso-ent-orm-mysql` first. Use this skill for SQL, MySQL, Aurora, index, migration safety, and operational tradeoffs below the ORM layer.
+
+## DDL Safety Rule
+
+Before any production DDL:
+
+```sql
+SET SESSION lock_wait_timeout = 10;
+```
+
+Then check blockers, choose the lowest-impact algorithm, and prove the migration path. DDL can queue behind metadata locks and then block all later reads/writes on the same table.
 
 ## Quick Reference
 
-| Task | Pattern | Section |
-|------|---------|---------|
-| PK type | `BIGINT UNSIGNED` | Data Types |
-| UUID storage | `BINARY(16)` + `UUID_TO_BIN()` | Data Types |
-| Timestamps | `DATETIME(6)` over TIMESTAMP | Data Types |
-| Upsert | `AS new` row alias (8.0.19+) | Query Optimization |
-| Pagination | Cursor-based, not OFFSET | Pagination |
-| Schema change | `ALGORITHM=INSTANT` first | DDL |
-| Large table DDL | gh-ost (no FKs) / pt-osc (FKs) | DDL |
-| Before any DDL | `SET SESSION lock_wait_timeout = 10` | DDL |
-| Connection driver | AWS Advanced JDBC Wrapper | Connection Mgmt |
-| Key alert metric | HLL < 100K | Monitoring |
-
-## Full Reference
-
-See @reference.md for detailed patterns, code examples, and Aurora-specific guidance covering:
-
-- **Index Types** — B-tree, covering, descending, functional, invisible, multi-valued, fulltext, partial
-- **Data Type Reference** — type selection table, UUID storage, DATETIME vs TIMESTAMP, JSON indexing, charset/collation
-- **Aurora-Specific Features** — endpoints, serverless v2, I/O-optimized, parallel query, read consistency, backtrack, blue/green, failover, auth/security
-- **Query Optimization** — EXPLAIN ANALYZE, optimizer hints, CTEs, hash joins, histograms, batch INSERT, upsert
-- **Pagination** — cursor-based, multi-column cursor (decomposed OR), deferred join
-- **Anti-Patterns** — unindexed FKs, SELECT *, type coercion, functions on indexed columns, long transactions, charset mixing, deadlock detection
-- **DDL & Schema Migration** — instant DDL, online DDL, MDL contention, gh-ost vs pt-osc
-- **Batch Operations** — bulk insert, PK-range chunking, Aurora HLL concerns
-- **Connection Management** — pool settings, max_connections formula, RDS Proxy, timeouts, failover reconnect
-- **Monitoring** — CloudWatch metrics, Performance Insights, InnoDB internals, slow query log
+| Task | Default Pattern | Load |
+|------|-----------------|------|
+| Indexes, leftmost prefix, covering index, JSON index, cardinality | Prefer workload-shaped composite indexes; verify with EXPLAIN | `references/indexes.md` |
+| Types, UUID, DATETIME, charset, utf8mb4 index length | Size to domain and index byte limits | `references/data-types.md` |
+| Aurora endpoints, Serverless v2, I/O-Optimized, Backtrack, Blue/Green, failover | Version-gate Aurora-specific behavior | `references/aurora-features.md` |
+| EXPLAIN, slow query, optimizer hints, hash join, histogram, upsert | Inspect actual plan before forcing hints | `references/query-optimization.md` |
+| Cursor pagination, deep OFFSET, row constructors | Cursor with unique tiebreaker | `references/pagination.md` |
+| SELECT *, coercion, long transaction, HLL, deadlock detect | Fix query shape and transaction scope first | `references/anti-patterns.md` |
+| DDL, MDL, instant DDL, gh-ost, pt-osc, OPTIMIZE TABLE | Set lock wait timeout, check blockers, choose algorithm | `references/ddl-migration.md` |
+| Bulk insert, chunked update/delete, sparse IDs | PK-window or keyset batches with throttling | `references/batch-ops.md` |
+| Pooling, RDS Proxy, JDBC Wrapper, failover reconnect | Budget total connections across app instances | `references/connection-mgmt.md` |
+| CloudWatch, Performance Insights, slow log, pt-query-digest, lock waits | Use live metrics plus slow-query evidence | `references/monitoring.md` |
+| Skill validation scenarios | Check whether agents avoid known traps | `references/pressure-tests.md` |

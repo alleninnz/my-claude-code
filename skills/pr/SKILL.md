@@ -1,68 +1,55 @@
 ---
 name: pr
-description: Use when creating or updating pull requests — generates accurate titles and descriptions from the diff. Also covers PR state changes (draft, ready, close, reopen, merge).
+description: Use when handling /pr create, /pr update, /pr merge, /pr close, /pr reopen, /pr draft, or /pr ready for pull request creation, synchronization, state changes, or merge conventions. Not for PR review comments; use resolve-pr-comments.
 ---
 
-# Pull Request
+# PR Conventions
 
-Smart PR creation and updates with diff-based description generation.
+This skill defines PR workflow conventions, authorization boundaries, and non-obvious gotchas. Assume normal git/gh mechanics are known.
 
-## create — Create a new PR (always draft)
+## Authorization
 
-1. Determine base branch: repo default (usually `main`), or user-specified
-2. Infer issue ID (check in order, stop at first match):
-   - User's arguments (e.g. `/pr create APP-21395`)
-   - Branch name (e.g. `feat/app-21395-...` → `APP-21395`)
-   - Commit messages (e.g. `APP-21395 | ...` or `(APP-21395)`)
-   - Recent conversation context (e.g. a Linear issue just discussed)
-   - If no issue ID found, proceed without one (omit issue prefix from title)
-3. Get diff: `git diff $(git merge-base HEAD <base>)..HEAD`
-4. Generate title: `<ISSUE-ID> | <conventional-commit style>`, imperative mood, under 70 chars
-5. Generate body (adaptive):
-   - Small diff (<100 changed lines): 1-3 bullet summary
-   - Larger diff: `## Summary` (3-5 bullets) + `## Test plan` (checklist)
-6. Create: `gh pr create --draft --title "<title>" --body "<body>"`
+Invoking `/pr create`, `/pr update`, or `/pr merge` is explicit user confirmation for the necessary scoped commit, push, PR edit, or PR merge action in that command.
 
-## update — Sync changes and update PR description
+Invoking `/pr close`, `/pr reopen`, `/pr draft`, or `/pr ready` is explicit user confirmation for that requested PR state change.
 
-1. Check working tree (`git status --porcelain`) and push status (ahead/behind remote)
-2. If uncommitted changes:
-   a. Stage modified and new files relevant to the PR (not unrelated files or secrets)
-   b. Generate a conventional-commit message from the staged diff (match the repo's recent commit style via `git log --oneline -5`)
-   c. Commit and push
-3. Else if unpushed commits exist: push
-4. Get base branch: `gh pr view --json baseRefName -q .baseRefName`
-5. Get diff: `git diff $(git merge-base HEAD <base>)..HEAD`
-6. If new commits were pushed (step 2 or 3): regenerate body using the same adaptive format as create, then `gh pr edit --body "<body>"`
-7. If no new commits (clean tree, up to date with remote): skip description update — inform user the PR is already in sync
-8. Title is preserved unless the user explicitly asks to change it
+Still ask before:
 
-## merge — Squash merge with extended description and clean up branches
+- Force push.
+- Pushing directly to `main` / `master`.
+- Pushing to protected branches outside the PR branch.
+- Staging unrelated files.
+- Bypassing non-trivial CodeRabbit findings.
 
-1. Get PR metadata: `gh pr view --json title,body,baseRefName`
-2. Gather context (run in parallel, using base branch from step 1):
-   - `git log --oneline $(git merge-base HEAD <base>)..HEAD`
-   - `git diff $(git merge-base HEAD <base>)..HEAD`
-3. Generate squash commit message:
-   - **Subject**: PR title as-is (preserve issue ID and conventional-commit style)
-   - **Body**: Generate an extended description from the diff and commit history:
-     - One-sentence summary of the change's purpose (the "why")
-     - Bulleted list of notable changes grouped by theme (not file-by-file — describe what changed functionally)
-     - Omit trivial changes (import reordering, formatting) — only include what a reviewer would care about in `git log`
-     - If the PR body contains a `Closes` line, include it at the end
-4. Merge: `gh pr merge --squash --subject "<subject>" --body "<body>"`
-5. Switch and update: `git checkout <base> && git pull`
-6. Delete local branch: `git branch -d <merged-branch>`
-7. Prune stale remote refs: `git fetch --prune`
-8. If merge fails (checks, conflicts): report error and stop — do not clean up
-9. If branch cleanup fails after successful merge: warn but don't error
+## Commit Review Gate
 
-## State Changes
+Before an automatic commit in `/pr create` or `/pr update`:
 
-- All state changes (`merge`, `close`, `reopen`, `open`, `draft`) proceed without confirmation
-- Never use `--delete-branch` with close
+- Stage only intended files.
+- Run `coderabbit:review` with `type: uncommitted` for non-trivial changes, or the available CodeRabbit uncommitted-review equivalent.
+- 0 findings + applicable verification passed: commit and push.
+- 1+ findings: ask `[Fix review findings / Commit anyway / Skip]`.
+- Fix review findings: fix, rerun applicable verification, restage intended files, and rerun CodeRabbit.
+- Commit anyway: commit and push only after that explicit choice.
+- Skip: stop without commit or push.
+- Trivial wording/comment-only edits may skip CodeRabbit with a note; still stage only intended files.
 
-## Common Mistakes
+Applicable verification means the checks that can prove the actual changed surface: tests for behavior changes, format/lint/build for code changes, metadata/link validation for skill or docs changes, and required CI checks when they are available.
 
-- `gh pr diff --stat` does not exist — use `gh pr view --json files` for change stats
-- `gh pr create` without `--draft` — always create as draft
+## Conventions
+
+- Title: `<ISSUE-ID> | <conventional commit subject>`, imperative, under 70 chars; omit issue prefix if none.
+- Issue ID inference: args -> branch -> commit messages -> current session's explicit issue context. Do not infer from stale memory.
+- Create: draft by default; only create ready when user passes `ready`.
+- Update: regenerate and update both PR title and body from the current branch diff, even when an existing title is present.
+- Body: 1-3 reviewer-focused bullets for small changes; otherwise `## Summary` + `## Test plan`.
+- Merge: squash only; subject is PR title as-is; body is one why sentence + themed bullets, not file-by-file.
+- Merge body: include existing `Closes` line; if absent and title has issue ID, add `Closes <ID>`.
+
+## Gotchas
+
+- Worktree merge cleanup: if CWD is inside a worktree, use `git worktree remove`; do not checkout base inside the worktree.
+- `gh pr diff --stat` does not exist; use `gh pr view --json files`.
+- `git branch -d` can fail after squash merge; use `-D` only when PR is confirmed merged.
+- Rerunning `/pr create` on an existing PR should report the existing PR and treat further synchronization as `/pr update`, not create another PR.
+- Never use `--delete-branch` when closing a PR.

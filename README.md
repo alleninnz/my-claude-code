@@ -29,7 +29,6 @@ Then run `/plugins` in Codex, open the `my-claude-codex` marketplace, select `my
 | `go-playbook` | Go 1.21-1.26 patterns — error handling, concurrency, testing, performance, gRPC |
 | `go-simplify` | Simplify Go code while preserving behavior; shared Claude Code/Codex skill |
 | `mysql-aurora-playbook` | MySQL 8.0 & Aurora MySQL 3 patterns — indexes, types, queries, DDL, monitoring |
-| `skill-guiding` | Browse and discover installed skills from user directory and marketplace plugins |
 | `opsx-prompt` | Generate ticket-first `opsx:new` prompts from Linear issues, with optional deeper review |
 | `implementation-discipline` | Supervise implementation against specs, prefer TDD when it fits, and checkpoint review-worthy risk boundaries |
 

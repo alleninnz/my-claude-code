@@ -1,101 +1,123 @@
 ---
 name: write-articles
-description: Use when writing technical articles, blog posts, newsletters, or turning notes and research into polished long-form content that matches a specific voice.
+description: "Use when drafting, rewriting, or editing long-form articles, technical blog posts, newsletters, essays, launch posts, guides, or tutorials where voice, evidence, structure, or platform formatting matters. Not for PR descriptions, commit messages, Slack replies, Linear comments, or short status updates."
 ---
 
 # Article Writing
 
-Write long-form content that sounds like a real person or brand, not generic AI output.
+Write long-form content with a specific voice, concrete evidence, and no generic AI filler.
 
-## When to Use
+## When Not to Use
 
-- drafting blog posts, essays, launch posts, guides, tutorials, or newsletter issues
-- turning notes, transcripts, or research into polished articles
-- matching an existing founder, operator, or brand voice from examples
-- tightening structure, pacing, and evidence in already-written long-form copy
+- PR descriptions, commit messages, Slack replies, Linear comments, or short status updates.
+- Pure API/reference docs where accuracy and completeness matter more than voice.
+- Factual news, market analysis, or research claims without provided sources or permission to verify.
+- Legal, medical, financial, or compliance advice that requires expert judgment.
+- Caruso brand or marketing content when Caruso brand guidance is available; use that guidance first.
 
-## Core Rules
+## Source and Fact Boundary
 
-1. Lead with the concrete thing: example, output, anecdote, number, screenshot description, or code block.
-2. Explain after the example, not before.
-3. Prefer short, direct sentences over padded ones.
-4. Use specific numbers when available and sourced.
-5. Never invent biographical facts, company metrics, or customer evidence.
+Never invent concrete facts. This includes:
 
-## Quick Reference
+- URLs, links, citations, quotes, screenshots, or source names.
+- Dates, version numbers, prices, percentages, benchmark results, or metrics.
+- People, companies, customers, products, features, incidents, or timelines.
+- Biographical details, customer evidence, testimonials, or "research shows" claims.
 
-| Step | Action |
-|------|--------|
-| Voice | Collect examples → extract rhythm, tone, formatting habits |
-| Open | Lead with evidence, example, or scene — never a generic intro |
-| Structure | One purpose per section, example-first, then explanation |
-| Edit | Delete filler, hype, and unsourced claims |
-| Deliver | Verify facts, confirm voice match, check platform formatting |
+If a concrete claim has no source, choose one:
 
-## Voice Capture Workflow
+- Delete it.
+- Qualify it as opinion or inference.
+- Mark it as `[TBD: source needed]`.
 
-If the user wants a specific voice, collect one or more of:
+Never silently turn uncertainty into fact.
 
-- published articles
-- newsletters
-- X / LinkedIn posts
-- docs or memos
-- a short style guide
+## Allen Voice Defaults
 
-Then extract:
+Use these when the user does not provide voice samples:
 
-- sentence length and rhythm
-- whether the voice is formal, conversational, or sharp
-- favored rhetorical devices such as parentheses, lists, fragments, or questions
-- tolerance for humor, opinion, and contrarian framing
-- formatting habits such as headers, bullets, code blocks, and pull quotes
+- Prefer Chinese for explanation; keep technical terms in English when clearer.
+- Use short paragraphs, usually 2-4 sentences.
+- Start with a concrete technical situation, failure, result, or tradeoff.
+- Prefer direct judgment over fake neutrality.
+- Avoid hype, motivational tone, and polished corporate language.
+- Good default shape: problem scene -> non-obvious finding -> concrete recommendation.
 
-If no voice references are given, default to a direct, operator-style voice: concrete, practical, and low on hype.
+Treat these as provisional defaults. If the user provides samples, extract the voice from those samples instead.
+
+## Voice Capture
+
+When matching a voice, build a compact voice profile before drafting:
+
+| Dimension | Capture |
+| --- | --- |
+| Sentence length | short / medium / long; note fragments if common |
+| Paragraph length | 1-2 / 3-5 / 6+ sentences |
+| First person | none / occasional / frequent |
+| Stance | neutral / opinionated / contrarian |
+| Evidence | code, numbers, screenshots, anecdotes, citations, examples |
+| Formatting | headings, bullets, code blocks, quotes, tables |
+| Rhythm | dense, conversational, sharp, reflective, terse |
+| Do-not-use | words, moves, jokes, or structures the sample avoids |
+
+Voice match means preserving rhythm, density, stance, and evidence style. It does not mean copying catchphrases or inventing personal experience.
 
 ## Banned Patterns
 
-Delete and rewrite any of these:
+Delete and rewrite these patterns before delivery:
 
-- generic openings like "In today's rapidly evolving landscape"
-- filler transitions such as "Moreover" and "Furthermore"
-- hype phrases like "game-changer", "cutting-edge", or "revolutionary"
-- vague claims without evidence
-- biography or credibility claims not backed by provided context
+| Category | Ban |
+| --- | --- |
+| Meta narration | "In this article...", "We'll explore...", "Let's dive in", "Without further ado" |
+| Filler | "It's important to note", "It's worth mentioning", "Needless to say", "Moreover", "Furthermore" |
+| Vague quantity | "various", "numerous", "many", "several", "a number of" without specifics |
+| Fake balance | "On one hand... on the other hand" when there is a clear recommendation |
+| Weak claims | "perhaps", "it could be argued", unnecessary "I think" |
+| Hype | "cutting-edge", "revolutionary", "game-changer", "unlock", "empower", "seamless" |
+| Chinese AI tone | "综上所述", "值得一提的是", "由此可见", "在...的大背景下", "众所周知", "...的奥秘", emoji titles |
+| Ending cliches | "In conclusion", "To summarize", "Hopefully this was helpful", "总结一下" |
 
-## Writing Process
+## Draft Loop
 
-1. Clarify the audience and purpose.
-2. Build a skeletal outline with one purpose per section.
-3. Start each section with evidence, example, or scene.
-4. Expand only where the next sentence earns its place.
-5. Remove anything that sounds templated or self-congratulatory.
+- If the user only asks for an article: propose a short outline first and wait for confirmation.
+- If the user says to write it directly or gives a complete brief: draft the full piece.
+- When rewriting existing copy: preserve the original argument unless explicitly asked to change it.
+- When matching voice: show the voice profile, then write.
+- For long pieces: prefer outline -> one representative section -> feedback -> full draft.
 
-## Structure Guidance
+## Article Shape
 
-### Technical Guides
+- Lead with the concrete thing: example, output, anecdote, number, screenshot description, code, or a specific failure.
+- Explain after the example, not before.
+- Keep one purpose per section.
+- Use code, terminal output, diagrams, before/after examples, or screenshots when they help verify the claim.
+- End with concrete takeaways or next actions, not a soft summary.
 
-- open with what the reader gets
-- use code or terminal examples in every major section
-- end with concrete takeaways, not a soft summary
+## Platform Formatting
 
-### Essays / Opinion Pieces
+| Platform | Paragraphs | Headings | Code | Notes |
+| --- | --- | --- | --- | --- |
+| Blog / Medium | 2-4 sentences | H2/H3 | yes | Use a concrete intro and scannable sections |
+| Newsletter / Substack | 2-5 sentences | H2 | optional | Make the first screen carry the point |
+| WeChat article | 1-3 sentences | short or bold headings | short blocks or screenshots | Mobile-first; avoid dense walls of text |
+| X thread | 1 sentence per post | none | avoid long code | One idea per post |
 
-- start with tension, contradiction, or a sharp observation
-- keep one argument thread per section
-- use examples that earn the opinion
+## Example
 
-### Newsletters
+Bad:
 
-- keep the first screen strong
-- mix insight with updates, not diary filler
-- use clear section labels and easy skim structure
+> In today's rapidly evolving database landscape, Aurora MySQL provides numerous game-changing benefits that empower teams to unlock better performance.
+
+Good:
+
+> 上周我把一个慢查询拆开看，问题不在 Aurora，而在我们以为 `(a, b) > (?, ?)` 一定会走索引。EXPLAIN 给了另一种答案。
 
 ## Quality Gate
 
 Before delivering:
 
-- verify factual claims against provided sources
-- remove filler and corporate language
-- confirm the voice matches the supplied examples
-- ensure every section adds new information
-- check formatting for the intended platform
+- Check every URL, date, version, number, quote, person, company, and product claim against the provided source or mark it `[TBD: source needed]`.
+- Remove or qualify unsupported claims.
+- Scan for banned English and Chinese AI patterns.
+- Confirm the output follows the selected voice profile or Allen defaults.
+- Check the platform format: paragraph length, headings, code blocks, and mobile readability.
