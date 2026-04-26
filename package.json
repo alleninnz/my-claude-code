@@ -2,9 +2,6 @@
   "name": "my-claude-codex",
   "private": true,
   "description": "Claude Code and Codex plugin for Go development — skills and workflow helpers.",
-  "scripts": {
-    "test:opsx-prompt": "node scripts/test-opsx-prompt.js --self-test"
-  },
   "keywords": [
     "claude-code-plugin",
     "codex-plugin",

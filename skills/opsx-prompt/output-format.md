@@ -25,6 +25,9 @@ This change:
 Already in place:
 - <already landed work this change should build on>
 
+Literal deliverables:
+- <external API/schema/field/RPC/event literal that opsx:new must receive>
+
 Non-scope:
 - <explicit non-goals or boundaries>
 
@@ -35,12 +38,13 @@ Open questions:
 Rules:
 
 - `Why` and `This change` are required
-- `Already in place`, `Non-scope`, and `Open questions` are optional
+- `Already in place`, `Literal deliverables`, `Non-scope`, and `Open questions` are optional
 - keep all prompt content domain-level
-- do not include file paths, function names, field names, or code snippets in the main prompt
+- do not include file paths, helper function names, private implementation symbols, or code snippets in the main prompt
+- external API, schema, field, RPC, or event names may appear in `Literal deliverables` when omitting them would change the requested outcome
 - map non-blocking ambiguity from `Unknowns` into `Open questions`
 - for freeform requests, use `no-issue`; derive `short title` from the requested outcome; use `unknown-service` when no service can be inferred safely
-- if a core ask cannot be represented safely without exact symbol names, do not fake precision in the prompt; use a user note or stop for clarification
+- if a core ask requires internal implementation symbols that cannot safely enter the prompt, do not fake precision; use a user note or stop for clarification
 - if the ticket is still materially unclear, do not generate the prompt
 
 ## User Notes
@@ -55,7 +59,7 @@ Render these outside the code block only when present:
 - <light sanity check note with code-level detail if needed>
 
 ### Symbol-sensitive requirements
-- <exact literal ask that could not be safely preserved in the domain-level prompt>
+- <internal implementation literal that could not be safely preserved in the main prompt>
 
 ### Possible missing considerations
 - <deep review note>
@@ -73,5 +77,5 @@ Rules:
 - user notes are not sent to `opsx:new`
 - deep-review notes do not enter the prompt automatically
 - `Possible already-completed work` stays a note until the user asks to revise `Already in place`
-- if `Symbol-sensitive requirements` contains a load-bearing detail, the user should review the prompt before treating it as complete
+- if `Symbol-sensitive requirements` contains a load-bearing detail, stop and ask whether it should become a main-prompt `Literal deliverables` entry or remain outside `opsx:new`
 - if the user wants a note reflected in the prompt, revise the prompt explicitly

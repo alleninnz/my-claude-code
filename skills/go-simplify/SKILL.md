@@ -1,6 +1,10 @@
 ---
 name: go-simplify
-description: Use when the user asks to simplify Go code while preserving behavior, including reducing nesting or control-flow complexity, removing unnecessary private helpers or one-use interfaces, applying staticcheck/gosimple cleanup, or cleaning uncommitted, branch-diff, or specific Go files.
+description: >
+  Use when the user asks to simplify Go code while preserving behavior,
+  including reducing nesting or control-flow complexity, removing unnecessary
+  private helpers or one-use interfaces, applying staticcheck/gosimple cleanup,
+  or cleaning uncommitted, branch-diff, or specific Go files.
 ---
 
 # Go Simplify

@@ -1,6 +1,10 @@
 ---
 name: mysql-aurora-playbook
-description: Use when writing or reviewing MySQL 8.0 or Aurora MySQL 3 SQL, indexes, UUID storage, cursor pagination, EXPLAIN, HLL, deadlocks, MDL, gh-ost, pt-osc, RDS Proxy, JDBC Wrapper, slow query logs, schema migrations, connection pools, or Aurora failover.
+description: >
+  Use when writing or reviewing MySQL 8.0 or Aurora MySQL 3 SQL, indexes,
+  UUID storage, cursor pagination, EXPLAIN, HLL, deadlocks, MDL, gh-ost, pt-osc,
+  RDS Proxy, JDBC Wrapper, slow query logs, schema migrations, connection pools,
+  or Aurora failover.
 ---
 
 # MySQL 8.0 & Aurora MySQL 3 Playbook

@@ -24,10 +24,22 @@ Do not use deep review as the default path.
 
 ## Prompt Template
 
-Fill in `{REPO_PATH}`, `{INTENT_SUMMARY}`, and `{RAW_CLAIMS}` before dispatching.
+Fill in `{REPO_PATH}`, `{INTENT_SUMMARY}`, `{RAW_CLAIMS}`, and `{ISSUE_ID_OR_NONE}` before dispatching.
 
 ```
 Review the codebase at {REPO_PATH} for considerations related to this change.
+
+Hard limits:
+- If `{ISSUE_ID_OR_NONE}` is not `none`, run cheap history checks first:
+  - cd {REPO_PATH}
+  - OWNER_REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+  - gh search prs "{ISSUE_ID_OR_NONE}" --repo "$OWNER_REPO" --json number,title,state,url,updatedAt --limit 20
+  - git log --all --grep="{ISSUE_ID_OR_NONE}" --oneline -n 20
+- If `gh` is unavailable or unauthenticated, skip only the PR search and continue with `git log`.
+- Read at most 20 files.
+- Run at most 10 targeted searches.
+- Report only findings with concrete evidence.
+- Do not report generic testing, monitoring, compatibility, or rollout advice without code or PR evidence.
 
 ## Current intent
 
@@ -67,7 +79,7 @@ Possible already-completed work:
   - <domain-level note> -- Evidence: <PR, file:line, or brief reference>
 
 Clarification needed:
-  - <only if the ticket premise appears materially false after review>
+  - <only if the ticket premise appears materially false after review> -- Evidence: <file:line, PR, or searched scope>
 
 If a section has no items, write `(none)`.
 ```
@@ -79,3 +91,4 @@ If a section has no items, write `(none)`.
 - `Possible contract risks` are warnings, not automatic prompt content
 - `Possible already-completed work` is a candidate for `Already in place`, but do not merge it into the prompt automatically; revise the prompt only if the user asks to incorporate it
 - `Clarification needed` means stop and ask the user before folding anything into the prompt
+- Drop any finding that does not include concrete `Evidence:`

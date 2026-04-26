@@ -1,208 +1,228 @@
 ---
 name: resolve-pr-comments
-description: Use when the current PR has AI reviewer comments (CodeRabbit, Cursor, etc.) that need to be reviewed and addressed, or when the user says "pr review", "review comments", "fix review comments".
+description: >
+  Use when the current PR has AI reviewer comments (CodeRabbit, Cursor, etc.)
+  that need to be reviewed and addressed, or when the user says "pr review",
+  "review comments", "fix review comments".
 ---
 
 # PR Review
 
-Interactive review of all unresolved PR review comments — both AI reviewer (CodeRabbit, Cursor, Copilot, etc.) and human reviewer comments. Dispatches a subagent to silently gather and classify comments, then presents results for interactive review.
+Work through unresolved PR review feedback with thread-aware data, independent analysis, user-controlled decisions, and explicit GitHub write confirmation.
 
 ## Prerequisites
 
-- `gh` CLI installed and authenticated
-- Current branch has an open PR (or PR URL/number provided as argument)
+- `gh` CLI installed and authenticated.
+- Current branch has an open PR, or the user provides a PR URL/number.
 
-## Tool constraints
+## Platform Rules
 
-- **`gh` CLI only** — use `gh api` (via Bash tool) for all GitHub API calls. **NEVER** use GitHub MCP tools.
-- **Critical/Major fix/skip decisions** — **MUST** use `AskUserQuestion` with choices `["Fix", "Skip"]`. This renders interactive buttons instead of plain text.
-- **Commit/push/resolve confirmation (Step 6)** — **MUST** use `AskUserQuestion` with choices `["Yes", "No"]`. Plain text questions do not block execution in auto mode — Claude will continue without waiting for the user's answer.
-- **Medium/Low batch interaction** — use freeform text (no `AskUserQuestion`). The complex interaction model (`fix 1, skip 2, review 3`) doesn't fit button choices.
+- Use `gh` for all GitHub API calls. Do not use GitHub MCP tools for thread-aware review data.
+- Claude Code blocking choices: use `AskUserQuestion`.
+- Codex or other environments without `AskUserQuestion`: ask the question in plain text and stop until the user replies.
+- Never commit, push, post replies, or resolve threads without explicit confirmation.
 
-## Step 1 — Gather and classify comments (silent)
+## Glossary
 
-Dispatch a subagent using the prompt template in `data-gather.md`. The subagent silently:
+- **Inline comment**: review-thread comment with `thread_id`, `is_resolved`, and `is_outdated`.
+- **PR-level comment**: conversation comment with no resolved state.
+- **Review body**: top-level body from a submitted review.
+- **Actionable**: maps to `Fix`, `Defer`, `Reply only`, or `Skip`.
+- **Defer**: valid concern, not fixed in this PR; prepare a follow-up issue draft or tracking note.
+- **Reply only**: no code change, but GitHub reply should explain the decision.
 
-- Identifies the PR and repo
-- Fetches unresolved review threads
-- Fetches all inline review comments (bot and human), filters to unresolved only
-- Fetches all PR-level issue comments (bot and human) and classifies: bot noise → skip, conversational → skip, actionable → include. **MUST NOT** drop human PR-level comments by user type — substantive reviews frequently land here. For each actionable issue comment, the subagent also collects staleness signals (reactions, author followups, commits-after) so the main skill can help the user distinguish already-handled feedback from live requests — PR-level comments have no resolved state, so without signals they re-surface on every run
-- Partitions outdated comments
-- Auto-triages Copilot comments (high false-positive rate) — applies to Copilot inline comments only, never to human comments
-- Classifies severity and deduplicates
+## Step 1 - Fetch and Classify
 
-The subagent returns structured data with: `pr`, `outdated[]`, `copilot_triage[]`, `critical_major[]`, `medium_low[]`, and `thread_map[]`.
+Run the deterministic fetch script from this skill directory while keeping the shell working directory at the target repo:
 
-If the subagent reports no comments, output "No review comments found" and stop.
-
-## Step 2 — Present triage summaries
-
-Show the subagent's triage results. Only show sections that have content:
-
-**Outdated** (if any):
-
-```text
-── N outdated comment(s) ──────────
-1. [bot-name] path/to/file.go — <one-line summary>
+```bash
+python3 <resolve-pr-comments-skill-dir>/scripts/fetch-comments.py
 ```
 
-**Copilot triage** (if any):
+For explicit PRs, use `--repo OWNER/REPO --pr 123` or `--url <pr-url>`.
+
+After fetch, compare fetched `pull_request.head_sha` with local `git rev-parse HEAD`. If they differ, stop before analysis and ask the user to checkout or update the PR branch. Do not analyze or fix review comments against a mismatched local checkout.
+
+Read `data-gather.md` and `data-contract.md`, then classify the raw JSON into:
+
+- `outdated[]`
+- `copilot_triage[]`
+- `critical_major[]`
+- `medium_low[]`
+- `reply_only[]`
+- `deferred[]`
+- `thread_map[]`
+
+If the script cannot run, use the fallback fetch rules in `data-gather.md`.
+
+If all buckets are empty (`outdated[]`, `copilot_triage[]`, `critical_major[]`, `medium_low[]`, `reply_only[]`, `deferred[]`), output "No review comments found" and stop.
+
+## Step 2 - Triage Summary
+
+Show only sections that have content:
 
 ```text
-── N Copilot comment(s) (auto-triaged) ──────────
-1. ✗ path/to/file.go:42 — <one-line summary> — <why skipped>
-2. ✓ path/to/file.go:88 — <one-line summary> — promoted
+── Review Comment Triage ──────────────────
+PR: OWNER/REPO#123
+Outdated: 2
+Copilot auto-skipped: 3
+Critical/Major: 1
+Medium/Low: 7
+Reply only: 1
+Deferred: 0
 ```
 
-## Step 3 — Critical/Major interactive review
+For outdated and Copilot auto-triage, show one-line summaries. Do not spend user attention on full templates for already-triaged noise.
 
-**MUST** present Critical/Major comments **one at a time**. **DO NOT** batch or group multiple comments in a single message.
+## Step 3 - Critical/Major Review
 
-For each comment (or deduplicated group):
+Present Critical/Major items one at a time. Read `deep-analysis.md` before presenting each item.
 
-1. **MUST** perform deep analysis — read `deep-analysis.md` for methodology, severity re-evaluation rules, and the unified presentation template
-2. Present the comment using the unified template — every comment **MUST** include all fields: Problem, Wants, Analysis, Recommendation. **DO NOT** skip any field.
-3. **For PR-level issue comments**: the subagent attaches `staleness_signals` (acknowledgements, author followups, commits-after). **MUST** display these verbatim in a dedicated "Signals" section before the AskUserQuestion — they let the user decide whether the concern was already handled. **NEVER** auto-skip based on signals; the user makes the call.
-4. **MUST** ask using `AskUserQuestion` with choices `["Fix", "Skip"]` — **DO NOT** proceed to the next comment without the user's explicit decision. **DO NOT** auto-decide on the user's behalf.
-5. Record the user's decision, move to next comment
+Each item must include:
 
-| User input | Behavior |
-|------------|----------|
-| `Fix` (button) | Queue for fix, move to next comment |
-| `Skip` (button) | Skip, move to next comment |
+- Problem
+- Wants
+- Evidence
+- Analysis
+- Confidence
+- Recommendation
+- Reason
+- Original comment collapsed
 
-**Severity re-evaluation during deep analysis:** If a comment is downgraded below Major, **DO NOT** present it here — move it to Step 4 (Medium/Low batch). If all Critical/Major comments are downgraded, skip this step entirely.
+For PR-level comments, display staleness signals before asking.
 
-## Step 4 — Medium/Low paginated review
+Decision choices:
 
-**MUST** present all Medium/Low comments (including any downgraded from Step 3) using the unified template. Problem and Wants fields come from the data-gather subagent output. Analysis **MUST** be YOUR independent judgment — **DO NOT** just agree with the reviewer by default. Write it yourself based on the subagent's classification and the comment context.
+| Choice | Meaning |
+| --- | --- |
+| Fix | Queue a code change. |
+| Defer | Queue a follow-up issue draft or tracking note plus a reply. |
+| Reply only | Queue a GitHub reply without code changes. |
+| Skip | Do not change code; queue a concise skip reason if the thread will be resolved. |
 
-Every Medium/Low comment **MUST** use the same template structure as Critical/Major. **DO NOT** collapse Medium/Low comments into one-line summaries. Reduced depth means shorter content per field, not fewer fields:
-- Problem: **MUST** be present — natural language explaining what's wrong with the code. Write as if explaining to a colleague sitting next to you.
-- Wants: **MUST** be present — natural language explaining what the reviewer wants done. Write as if explaining to a colleague sitting next to you.
-- Analysis: **MUST** be present — natural language with YOUR independent judgment. Write as if explaining to a colleague sitting next to you.
-- Signals (PR-level only): **MUST** be present for PR-level issue comments — display the subagent's `staleness_signals` (acknowledgements, author followups, PR activity). Omit for inline comments. Without this, already-handled PR-level feedback looks identical to fresh requests and gets auto-queued or skipped blindly — PR-level comments have no resolved state.
-- Recommendation: **MUST** be present
-- Original comment: **MUST** be present (collapsed)
+Use `AskUserQuestion` with `["Fix", "Defer", "Reply only", "Skip"]` in Claude Code. In Codex, ask and stop.
 
-### Pagination
+If deep analysis downgrades an item below Major, move it to Step 4 instead of interrupting the user here.
 
-Present comments **5 per page**. If total ≤ 5, show as a single page (no page header needed).
+## Step 4 - Medium/Low Review
 
-Numbering is **global** across all pages (1–N), not reset per page.
+Use compact cards by default. Full deep analysis is available through `review N`.
 
-Each page **MUST** show its own defaults summary and confirmation prompt. User confirms the current page before the next page appears.
+Present 5 items per page with global numbering:
 
 ```text
-── Medium/Low (13 comments) ── Page 1/3 ──────────
+── Medium/Low (13 comments) - Page 1/3 ──────────
 
-── 1/13 ── [Medium] ── [coderabbit] ──────────
-📍 path/to/file.go:88
+#1 [Medium] [coderabbit] path/to/file.go:88 - Fix
+Problem: handler ignores request cancellation.
+Evidence: goroutine waits on work channel without a ctx.Done() branch.
+Reason: local fix prevents work from surviving the request lifecycle.
+Risk if skipped: timed-out requests can leave work running.
 
-**Problem:**
-This handler doesn't check context cancellation — if the request times out, the goroutine keeps running.
+#2 [Low] [coderabbit] path/to/model.go:33 - Skip
+Problem: reviewer wants an unused option removed.
+Evidence: neighboring handlers keep the same unused option for interface symmetry.
+Reason: preserving the option keeps this handler consistent with adjacent code.
+Risk if skipped: low; preserves repo convention.
 
-**Wants:**
-Add a ctx.Done() case in the select to clean up on timeout.
+Defaults:
+Fix: #1
+Skip: #2, #3, #4, #5
 
-**Analysis:**
-The handler runs unbounded with no cancellation check — request timeouts leave zombie goroutines.
-
-**Recommendation:** Fix
-
-<details><summary>Original comment</summary>
-...
-</details>
-
-── 2/13 ── [Low] ── [coderabbit] ──────────
-📍 path/to/model.go:33
-
-**Problem:**
-The `opts` parameter is declared but never used.
-
-**Wants:**
-Remove the unused parameter.
-
-**Analysis:**
-Matches existing codebase convention — other handlers keep unused opts.
-
-**Recommendation:** Skip
-
-<details><summary>Original comment</summary>
-...
-</details>
-
-...
-
-── Page 1 Defaults ──────────────────────────
-Auto-queued:  #1 context cancellation in handler (Fix)
-Auto-skipped: #2 unused opts param (Skip), #3 ... , #4 ... , #5 ...
-
-Override? (e.g., 'skip 1' or 'fix 2', 'ok' to confirm page):
+Reply with: ok, ok all, fix 2, defer 3, reply 4, skip 1, review 5, why 2
 ```
 
-After user confirms, lock decisions for current page and show next:
+Commands:
+
+| Input | Behavior |
+| --- | --- |
+| `ok` or `done` | Confirm current page defaults. |
+| `ok all` | Confirm defaults for current and all remaining Medium/Low pages. |
+| `fix N`, `fix 1,3`, `fix 1-4` | Queue fixes. |
+| `defer N` | Queue follow-up/tracking reply. |
+| `reply N` | Queue reply-only. |
+| `skip N`, `skip all` | Skip current page item(s). |
+| `review N`, `review all` | Promote to deep analysis one at a time using Step 3 choices. |
+| `why N` | Explain the recommendation without changing the decision. |
+
+Users can combine commands, e.g. `fix 1, defer 2, review 4`.
+
+## Step 5 - Fix Plan and Implementation
+
+Before editing, show the plan:
 
 ```text
-── Medium/Low ── Page 2/3 ──────────
+── Fix Plan ───────────────────────────────
+Fix:
+1. path/to/file.go - add ctx cancellation to worker loop
+2. store.go - handle nil category before packing proto
 
-── 6/13 ── ...
+Defer:
+3. PR-level comment - draft follow-up issue for pagination refactor
+
+Reply only:
+4. config.go - explain why existing default matches production config
+
+Skip:
+5. model.go - style nit conflicts with local convention
 ```
 
-Last page confirmed → proceed to Step 5.
+Then apply queued fixes.
 
-### Interaction rules (per page)
+Implementation order:
 
-| User input | Behavior |
-|------------|----------|
-| `ok` or `done` | Confirm current page defaults, show next page (or proceed to Step 5 if last page) |
-| `skip N` or `skip 1,2` | Override to skip (current page only), rest keep defaults |
-| `fix N` or `fix 1,3` | Override to fix (current page only), rest keep defaults |
-| `skip all` | Override all on current page to skip |
-| `fix all` | Override all on current page to fix |
-| `review N` or `review 1,3` | Promote selected (current page only) to deep analysis, re-present one at a time at Critical/Major depth. Each gets an immediate `AskUserQuestion` with choices `["Fix", "Skip"]` — same as Step 3 |
-| `review all` | Promote all on current page to deep analysis |
+1. Group fixes by file or behavior area.
+2. Apply one group at a time.
+3. Run targeted verification for that group when practical.
+4. After all groups, run full applicable verification.
 
-Users can combine in one response (e.g., `fix 1, skip 2, review 3`). All tokens are keyword-prefixed (`fix`, `review`, `skip`).
+Verification must be concrete. Infer commands from `CLAUDE.md`/`AGENTS.md`, `Makefile`, package scripts, `go.mod`, or existing CI config. Print the chosen commands before running them. If verification fails, stop in Step 5, report the failure, and do not proceed to Step 6.
 
-## Step 5 — Apply queued fixes
+Do not start fixing until every presented comment has a recorded decision.
 
-Show the review summary:
+## Step 6 - Preview, Confirm, Publish, Resolve
 
-```text
-── Review Summary ──────────────────────────
-Critical/Major: 3 comments (2 fix, 1 skip)
-Medium/Low:     5 comments (1 reviewed → fix, 4 skipped)
-Outdated:       2 comments (auto-skipped)
-Copilot:        4 comments (1 promoted → fix, 3 auto-skipped)
-Duplicates:     3 comments merged into 2 groups
-────────────────────────────────────────────
-Total: 17 comments → 4 fixes queued
-```
+Before asking for confirmation, show:
 
-If no fixes queued: report "No fixes to apply." then skip straight to replying and resolving threads — no commit/push needed, no confirmation prompt. Read `resolve-threads.md` for API commands and reply rules.
+- `git diff --stat`
+- focused diff summaries for changed files
+- verification commands and results
+- replies that will be posted
+- threads/comments that will be resolved
+- deferred follow-up drafts, if any
 
-If fixes queued: apply all fixes, **MUST** run build/lint/test to verify — **DO NOT** skip verification. Show summary of changes, then proceed to Step 6.
+Ask:
 
-## Step 6 — Commit, push, and resolve threads
+> Commit and push, then reply and resolve threads?
 
-**MUST** use `AskUserQuestion` with choices `["Yes", "No"]` and question: "Commit and push, then reply and resolve threads?"
+Use `AskUserQuestion` with `["Yes", "No"]` in Claude Code. In Codex, ask and stop.
 
-**DO NOT** ask via plain text — plain text questions do not block execution in auto mode, causing Claude to proceed without user confirmation.
+If Yes:
 
-If **Yes**: stage changed files, create a descriptive commit, push, then read `resolve-threads.md` for API commands and reply rules. **Every thread MUST receive a reply before being resolved** — **NEVER** resolve silently.
-If **No**: **DO NOT** commit, push, or resolve.
+1. Stage only intended files.
+2. Create a descriptive commit.
+3. Push.
+4. Read `resolve-threads.md`.
+5. Post replies before resolving threads.
+6. Resolve only threads processed in this run.
 
-## Common mistakes
+If No: do not commit, push, reply, or resolve.
 
-- **Echoing AI text verbatim** — Problem, Wants, and Analysis **MUST** use natural conversational language. **NEVER** echo reviewer phrasing like "Consider adding..." or "It is recommended that...". Analysis is YOUR independent judgment, written in the same conversational tone as Problem and Wants.
-- **Skipping Problem, Wants, or Analysis fields** — Every comment at every severity level **MUST** include Problem, Wants, and Analysis. These fields are NOT optional. DO NOT skip them, even for Low severity.
-- **Collapsing Medium/Low to one-line summaries** — Medium/Low **MUST** use the same template structure as Critical/Major. Reduced depth means shorter sentences, NOT fewer fields.
-- **Batching Critical/Major comments** — Critical/Major **MUST** be presented one at a time. **DO NOT** show multiple Critical/Major comments in a single message.
-- **Analyzing without reading the code** — For Critical/Major, you **MUST** read the git diff and function context before writing Analysis. The fact that Diff is not a separate display field does NOT mean you can skip reading the code. **DO NOT** analyze from the comment text alone.
-- **Agreeing with the reviewer by default** — **MUST** form your own independent judgment. **DO NOT** default to agreeing with the reviewer. If the concern doesn't apply, say so explicitly.
-- **Committing or resolving without asking** — **MUST** use `AskUserQuestion` (not plain text) in Step 6. **NEVER** commit, push, or resolve threads without explicit confirmation. Plain text questions do not block in auto mode.
-- **Using plain text for blocking confirmations** — Any confirmation that **MUST** block execution (Step 3 Fix/Skip, Step 6 commit/push) requires `AskUserQuestion`. Plain text questions are only for non-blocking interactions (Step 4 page confirmations).
-- **Fixing without queuing first** — **MUST** go through ALL comments (Steps 3 + 4) before applying fixes in Step 5. **DO NOT** start fixing during the review steps.
-- **Resolving threads without replying** — Every thread **MUST** get a reply explaining why it was resolved. **NEVER** resolve silently.
-- **Dropping human PR-level comments at fetch time** — The data-gather step **MUST NOT** filter issue comments by `user.type`. Human reviewers often post substantive design feedback as PR-level issue comments rather than inline; a blanket bot-only filter silently hides those from the review. Classify PR-level comments into bot-noise / conversational / actionable — include the actionable ones.
+If there are no code fixes but there are reply-only, deferred, skipped, outdated, or auto-skipped Copilot items, ask a narrower confirmation:
+
+> Post replies and resolve processed threads?
+
+Use the same blocking rule.
+
+## Common Mistakes
+
+- Echoing reviewer text verbatim instead of explaining in natural language.
+- Skipping Evidence or Confidence.
+- Treating human comments like bot comments.
+- Auto-skipping PR-level comments because they look stale.
+- Merging nearby comments with different requested actions.
+- Fixing before all review decisions are recorded.
+- Running vague "tests" without naming commands.
+- Asking for commit/push before showing the diff preview.
+- Resolving a thread without first posting a reply.
+- Claiming a deferred follow-up exists when only a draft was prepared.

@@ -1,6 +1,10 @@
 ---
 name: implementation-discipline
-description: Use when executing or supervising implementation from a spec, plan, ticket, or agent-written code; when checking for spec drift, scope creep, missing verification, weak edge-case coverage, poor fit with best practices, or review-worthy checkpoints during development.
+description: >
+  Use when executing or supervising implementation from a spec, plan, ticket,
+  or agent-written code; when checking for spec drift, scope creep, missing
+  verification, weak edge-case coverage, poor fit with best practices, or
+  review-worthy checkpoints during development.
 ---
 
 # Implementation Discipline

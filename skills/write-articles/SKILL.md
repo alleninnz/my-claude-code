@@ -1,6 +1,10 @@
 ---
 name: write-articles
-description: "Use when drafting, rewriting, or editing long-form articles, technical blog posts, newsletters, essays, launch posts, guides, or tutorials where voice, evidence, structure, or platform formatting matters. Not for PR descriptions, commit messages, Slack replies, Linear comments, or short status updates."
+description: >
+  Use when drafting, rewriting, or editing long-form articles, technical blog
+  posts, newsletters, essays, launch posts, guides, or tutorials where voice,
+  evidence, structure, or platform formatting matters. Not for PR descriptions,
+  commit messages, Slack replies, Linear comments, or short status updates.
 ---
 
 # Article Writing

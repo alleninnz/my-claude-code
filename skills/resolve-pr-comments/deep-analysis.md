@@ -1,82 +1,140 @@
-# Deep Analysis — Methodology and Presentation
+# Deep Analysis
 
-## Analysis inputs
+Use this for Critical/Major items and any Medium/Low item promoted with `review N`.
 
-Before presenting a Critical/Major comment (or a Medium/Low comment promoted via `review N`), you **MUST** gather all of the following — **DO NOT** present without reading the actual code first:
+## Required Inputs
 
-1. **git diff** — `git diff $(gh pr view --json baseRefName -q .baseRefName)...HEAD -- {path}` focused on the comment's location
-2. **Function-level context** — the full function/method containing the flagged line (not the entire file)
-3. **Project conventions** — CLAUDE.md, linter config, surrounding code patterns
+Before presenting, gather:
 
-For PR-level issue comments (no file path): use the PR description and overall diff summary instead.
+1. Focused diff for the file:
+   ```bash
+   git diff $(gh pr view --json baseRefName -q .baseRefName)...HEAD -- path/to/file
+   ```
+2. Function or method containing the flagged line.
+3. Surrounding repo conventions: nearby code, tests, `CLAUDE.md`/`AGENTS.md`, linter config.
+4. For PR-level comments or review bodies: PR description, changed-file summary, and related diff hunks.
 
-If a file was deleted/renamed, check `git log --diff-filter=R --find-renames -- {path}`.
+If a file moved or disappeared, check rename history before deciding the comment is stale.
 
-## Severity re-evaluation
+## Reviewer Signal
 
-After deep analysis, Claude may upgrade or downgrade:
+Use the signal matrix in `data-gather.md` as a prior for review order and scrutiny, not as proof:
 
-- Downgraded below Major → move to Medium/Low batch (Step 4), retain gathered context for reuse if promoted via `review N`
-- Upgraded → reflect in header (e.g., `[Medium → Critical]`)
-- If all Critical/Major comments downgrade, skip Step 3 and proceed to Step 4
+- Human: never auto-skip; ambiguity usually becomes `Reply only` or `Defer`.
+- CodeRabbit: high signal but real false positives; verify against current code.
+- Codex: high signal but real false positives; verify against diff, tests, and repo conventions.
+- Cursor: medium signal; verify against conventions.
+- Copilot: low/variable signal; triage carefully.
+- Unknown bot: low signal unless the evidence is concrete.
 
-## Language style
+Signal quality is not correctness. Never recommend `Fix` only because the reviewer is high signal. Evidence from current code wins.
 
-Every **Problem**, **Wants**, and **Analysis** field **MUST** use natural conversational language — as if explaining to a colleague sitting next to you. This applies to **ALL** severity levels, no exceptions.
+## Analysis Taxonomy
 
-**NEVER use these patterns:**
-- "Consider adding..." / "It is recommended that..." / "Potential issue with..."
-- Any phrasing that echoes the AI reviewer's original wording
-- Hedging language: "may", "could potentially", "it might be beneficial to"
+Classify the reviewer's concern before recommending:
 
-**Required style:**
-- Problem: "This handler doesn't check context cancellation — if the request times out, the goroutine keeps running and never stops"
-- Wants: "Add a ctx.Done() case in the select so it cleans up and returns on timeout"
-- Analysis: "`category: FeeCategory!` is non-nullable, but investment-service has existing fees without category set — proto zero value hits the default case in `UnpackFeeCategory` and returns an error, breaking all fee queries for existing data"
+| Type | Meaning | Usual recommendation |
+| --- | --- | --- |
+| Valid bug | Current behavior can break, corrupt data, leak, panic, or violate a contract. | Fix |
+| Missing proof | Code may be fine, but tests or verification are missing for changed behavior. | Fix or Defer |
+| Needs decision | Product/API/backward-compatibility tradeoff. | Defer or Reply only |
+| Convention mismatch | Reviewer asks for something that conflicts with repo patterns. | Skip or Reply only |
+| Already covered | Existing guard/test/implementation handles the concern. | Reply only or Skip |
+| Stale | Diff moved or current code no longer has the issue. | Reply only or Skip |
+| Noise | Style nit or incorrect bot claim with no practical value. | Skip |
 
-The rule: pretend you're explaining the problem to the colleague sitting next to you.
+## Severity Re-Evaluation
 
-**Problem** and **Wants** come from the data-gather subagent output. For Critical/Major, you **MUST** refine them after reading the diff and function context — the subagent's version is a starting point, not final. For un-promoted Medium/Low (no deep analysis), use the subagent's version directly.
+Upgrade or downgrade after reading code.
 
-## Presentation template
+- Critical: security, data loss, normal-input panic/crash, state-corrupting race.
+- Major: real correctness bug, missing error handling, API contract break, deploy/migration risk, resource leak.
+- Medium: bounded edge case, missing test for changed behavior, maintenance readability concern.
+- Low: naming, formatting, comment wording, optional simplification.
+
+If a Critical/Major item downgrades below Major, move it to Medium/Low review.
+
+## Presentation Template
 
 ```text
-── 1/N ── [Critical] ── [coderabbit] ──────────
-📍 path/to/file.go:42
+── 1/N ── [Major] ── [coderabbit] ──────────
+Path: path/to/file.go:42
 
-**Problem:**
-<MUST be natural language explaining what's wrong with the code.
-Write as if explaining to a colleague sitting next to you.
-DO NOT echo reviewer phrasing.>
+Problem:
+This worker ignores `ctx.Done()`. If the request times out, it can keep running after the handler returns.
 
-**Wants:**
-<MUST be natural language explaining what the reviewer wants done.
-Write as if explaining to a colleague sitting next to you.
-DO NOT copy the reviewer's suggestion verbatim.>
+Wants:
+Stop the worker when the request context is cancelled.
 
-**Analysis:**
-<MUST be natural language with YOUR independent judgment: agree/disagree, and why.
-Write as if explaining to a colleague sitting next to you.
-DO NOT just agree with the reviewer — state disagreement explicitly when you disagree.
-When code context helps your argument, use inline code blocks (e.g. `category: FeeCategory!`)
-rather than a separate diff snippet.>
+Evidence:
+The function receives `ctx`, but the `select` only waits on work/results channels.
 
-**Recommendation:** Fix / Skip
-<1-sentence rationale>
+Analysis:
+The reviewer is right. This is a request-lifecycle leak, and the fix is local.
+
+Confidence: High
+Recommendation: Fix
+Reason: Add a `ctx.Done()` branch; it changes only cancellation behavior.
 
 <details><summary>Original comment</summary>
-<raw reviewer text>
+...
 </details>
 ```
 
-For **deduplicated groups**: replace header with `── 1/N ── [Major] ── 2 comments grouped ──`, show `📍 path/to/file.go:42 (coderabbit, copilot)`, **MUST** merge Problem/Wants/Analysis noting each reviewer's angle, and wrap originals in `<details><summary>Original comments (2)</summary>`. **DO NOT** just pick one reviewer's framing — synthesize both.
+For PR-level comments, include a `Signals:` section before `Problem`.
 
-Omit `📍` for PR-level issue comments.
+For grouped comments, synthesize all reviewer angles. Do not pick one comment and hide the rest.
 
-## User interaction
+## Language Rules
 
-This file covers analysis methodology and presentation only. The actual user interaction model is defined in SKILL.md Steps 3 and 4.
+Write like an engineer explaining a PR review decision, not like a reviewer, marketer, or policy document.
 
-**Critical/Major (Step 3):** Present **one at a time**. After each comment, use `AskUserQuestion` with choices `["Fix", "Skip"]`. **DO NOT** batch multiple comments into a single message.
+### Style
 
-**Medium/Low promoted via `review N` (Step 4):** Same as Critical/Major — present one at a time with immediate `AskUserQuestion` with choices `["Fix", "Skip"]` per comment.
+- Use short, direct sentences.
+- Put the conclusion first.
+- One sentence should carry one idea.
+- Prefer concrete nouns and verbs over abstractions.
+- Name the exact function, field, query, branch, test, or config.
+- Use "This breaks because...", "This is safe because...", or "I would skip this because..." when helpful.
+- If disagreeing, say so directly and explain the code evidence.
+
+### Field Duties
+
+- **Problem:** what can go wrong in the current code.
+- **Wants:** what the reviewer is asking to change.
+- **Evidence:** the concrete code fact that supports or refutes the concern.
+- **Analysis:** your judgment in 1-3 short sentences.
+- **Reason:** why the recommendation is the right next action.
+
+### Avoid
+
+- Reviewer echo: "Consider adding...", "It is recommended that...", "Potential issue with..."
+- Empty hedging: "may", "could potentially", "might be beneficial"
+- Vague nouns: "thing", "logic", "handling", "issue", "scenario" without naming the concrete code
+- Soft filler: "It is important to note", "Worth mentioning", "In this case"
+- Fake balance: "While X is true, Y is also important" unless there is a real tradeoff
+- Long chained sentences with multiple claims
+
+### Before / After
+
+Bad:
+> This could potentially cause issues in certain scenarios, so it might be beneficial to consider adding cancellation handling.
+
+Good:
+> This worker ignores `ctx.Done()`. If the request times out, the goroutine can keep waiting after the handler returns.
+
+Bad:
+> The reviewer suggests improving error handling around the database operation.
+
+Good:
+> `CreateInvestor` drops the `Insert` error. The API can return success even when the row was not written.
+
+## Recommendations
+
+| Recommendation | Use when |
+| --- | --- |
+| Fix | A code/test/docs change belongs in this PR. |
+| Defer | The concern is valid but should be tracked separately. Prepare a follow-up issue draft; do not claim it exists unless created. |
+| Reply only | No code change is needed, but the reviewer deserves a technical answer. |
+| Skip | No code change and no substantive reply beyond a concise resolution reason. |

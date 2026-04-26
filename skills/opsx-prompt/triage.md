@@ -32,6 +32,13 @@ You are running a light sanity check against the codebase at {REPO_PATH}.
 
 Your job is NOT to discover extra scope. Your job is to confirm that the ticket still points at the right thing.
 
+Hard limits:
+- Read at most 10 files.
+- Inspect only files, symbols, boundaries, deliverables, and contracts listed in Raw claims.
+- Use targeted symbol lookup only when Raw claims names a symbol but no path.
+- Do not run git history searches, caller sweeps, consumer sweeps, or broad repository scans.
+- Stop as soon as the ticket target is confirmed, corrected, or needs clarification.
+
 ## Change intent
 
 {INTENT_SUMMARY}
@@ -55,20 +62,20 @@ Do NOT:
 
 Return exactly this structure:
 
-Status:
-  <ok | corrected | clarification-required>
+STATUS=<ok | corrected | clarification-required>
 
 Refined intent:
   <domain-level rewrite of the intent; if no correction is needed, restate the original intent cleanly>
 
 Notes:
-  - [claim] <confirmed symbol or wrong-target correction>
-  - [scope] <confirmed boundary or contradicted boundary>
-  - [clarification] <only when the ticket premise appears materially wrong>
+  - [claim] <confirmed symbol or wrong-target correction> -- Evidence: <file:line or searched scope>
+  - [scope] <confirmed boundary or contradicted boundary> -- Evidence: <file:line or searched scope>
+  - [clarification] <only when the ticket premise appears materially wrong> -- Evidence: <file:line or searched scope>
 
 Rules:
 - Keep `Refined intent` domain-level.
 - `Notes` may mention real symbols or paths.
+- Every note must include `Evidence:`.
 - Use `clarification-required` only when the ticket would otherwise produce a likely false prompt.
 - If you are unsure, prefer `ok` or `corrected` over inventing a contradiction.
 ```
@@ -83,6 +90,8 @@ Rules:
 ## Parsing
 
 - If `{REPO_PATH}` is unavailable, do not dispatch this prompt.
-- `Status: ok` -> use `Refined intent` and continue
-- `Status: corrected` -> use `Refined intent` and show `Notes` as a user-facing mismatch note
-- `Status: clarification-required` -> do not generate a prompt; surface the note and ask the user to clarify the ticket
+- `STATUS=ok` -> use `Refined intent` and continue
+- `STATUS=corrected` -> use `Refined intent` and show `Notes` as a user-facing mismatch note
+- `STATUS=clarification-required` -> do not generate a prompt; surface the note and ask the user to clarify the ticket
+- If the first non-empty line is not exactly one of the three `STATUS=` values, treat the check as incomplete and ask for a corrected triage result before using it
+- If any `Notes` item lacks `Evidence:`, treat the check as incomplete and ask for a corrected triage result before using it

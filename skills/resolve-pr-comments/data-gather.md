@@ -1,196 +1,134 @@
-# PR Review — Data Gathering Subagent
+# PR Review Data Gathering
 
-Dispatch this as an Agent with `model: sonnet` (mechanical data fetching, no judgment needed beyond Copilot triage). The subagent **MUST** use `gh` CLI (via Bash tool) for all GitHub API calls — **NEVER** use GitHub MCP tools.
+Use deterministic data fetch first, then let the agent classify. Do not hand-roll GitHub API calls unless the script is unavailable.
 
-## Prompt template
+## Default Fetch
 
-```
-You are gathering and classifying AI reviewer comments for PR #{number} on {owner}/{repo}.
+Run from the repository checkout:
 
-Working directory: {cwd}
-
-## Step 0: Fetch PR metadata
-
-Fetch the PR author login and current head — needed to attribute staleness signals correctly:
-
-gh api repos/{owner}/{repo}/pulls/{number} \
-  --jq '{author: .user.login, head_sha: .head.sha, updated_at: .updated_at}'
-
-Store as `pr_meta`. Referenced below as `pr_meta.author` and `pr_meta.updated_at`.
-
-## Step 1: Fetch unresolved thread IDs
-
-gh api graphql -F owner='{owner}' -F repo='{repo}' -F number={number} -f query='
-  query($owner: String!, $repo: String!, $number: Int!) {
-    repository(owner: $owner, name: $repo) {
-      pullRequest(number: $number) {
-        reviewThreads(first: 100) {
-          nodes {
-            id
-            isResolved
-            comments(first: 1) { nodes { databaseId } }
-          }
-        }
-      }
-    }
-  }' --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | .comments.nodes[0].databaseId]'
-
-Store as the unresolved comment ID set.
-
-## Step 2: Fetch all comments (bot + human)
-
-Review comments (inline, top-level only):
-
-gh api repos/{owner}/{repo}/pulls/{number}/comments --paginate \
-  --jq '[.[] | select(.in_reply_to_id == null) | {id: .id, path: .path, line: .line, body: .body, user: .user.login, user_type: .user.type}]'
-
-**MUST** filter to only those whose id is in the unresolved set. **DO NOT** include resolved comments.
-
-Issue comments (PR-level) — **MUST** fetch both human and bot comments. **DO NOT** filter by user type at this step; filtering happens in classification below.
-
-gh api repos/{owner}/{repo}/issues/{number}/comments --paginate \
-  --jq '[.[] | {id: .id, body: .body, user: .user.login, user_type: .user.type, created_at: .created_at, type: "issue_comment"}]'
-
-Classify each issue comment into one of three buckets:
-
-1. **Skip (bot noise)** — auto-generated summaries and CI reports with no actionable content:
-   - CodeRabbit walkthrough tables and paused-review banners
-   - Datadog / CI pipeline reports
-   - Linear linkback comments
-   - Bot status notifications
-
-2. **Skip (conversational)** — chatter without substantive review content, from humans or bots:
-   - Bot invocations (`@codex review`, `@coderabbitai help`, `/review`)
-   - Simple acknowledgements (`LGTM`, `thanks`, `nice`)
-   - Teammate discussion that doesn't ask for code changes
-   - Merge/status notes (`ready to merge`, `blocked by X`)
-
-3. **Include (actionable)** — substantive review feedback that maps to a Fix/Skip decision:
-   - Design concerns or API contract questions
-   - Explicit asks to change, add, or remove code
-   - Flagged bugs, risks, or missing cases
-   - Human reviewers giving feedback at PR level instead of inline (common for cross-cutting concerns)
-   - Bot comments with concrete inline feedback outside the CodeRabbit walkthrough (e.g., separate `coderabbitai` actionable blocks)
-
-**MUST exclude from the actionable bucket (use as staleness signals only):**
-- Comments where `user == pr_meta.author` — these are the author's own status updates or replies. They are not review items. Surface qualifying ones as `author_followups` signals (see below), never as fresh Fix/Skip candidates.
-- Comments whose body contains the marker `<!-- resolve-pr-comments:reply -->` — these are the skill's own prior Step 6 replies (any operator). Drop regardless of author. This marker-based filter survives operator change: a maintainer processing a contributor branch keeps their legitimate PR-level review comments while prior skill replies are suppressed. **DO NOT** fall back to filtering by the session's GitHub login — that blanket-drops real human reviews when the operator isn't the PR author.
-
-**When in doubt, include it.** Over-including a conversational comment is recoverable (easy Skip in Step 5); dropping a substantive human review at fetch time is silent and invisible to the user. The skill has already been bitten by this — **NEVER** reintroduce a blanket `user.type == "Bot"` filter here.
-
-### Staleness signals (PR-level actionable comments only)
-
-PR-level issue comments **have no resolved/unresolved state** — they persist even after the author addresses them inline, in a reply, or via a push. Without extra signals, repeat runs re-queue already-handled feedback.
-
-For **each issue comment classified as actionable** (bucket 3 above), fetch these signals and attach them to the comment record. **DO NOT auto-skip based on signals** — the main skill presents them to the user, who makes the final Fix/Skip call.
-
-1. **Reactions on the comment** (acknowledgement hint):
-   ```
-   gh api repos/{owner}/{repo}/issues/comments/{comment_id}/reactions \
-     --jq '[.[] | {user: .user.login, content: .content}]'
-   ```
-   Flag if the original reviewer or `pr_meta.author` left `+1` / `rocket` / `hooray`.
-
-2. **Subsequent author replies** (discussion hint): from the issue-comments list already fetched, include any issue comment where `created_at > target.created_at` AND `user == pr_meta.author` AND (body mentions the reviewer by `@handle` OR body quotes the original). **MUST NOT** attach on bare author match alone — without a mention or quote there's no evidence the comment addresses *this* specific review, and on a PR with multiple actionable reviews every later author comment would falsely attach to every earlier review and mislead the user into skipping live feedback. Coarse "author was active" activity is already captured by `pr_updated_since_comment`. Use `pr_meta.author` — **DO NOT** guess who the author is.
-
-3. **PR activity after the comment** (coarse work-done hint): compare `pr_meta.updated_at > target.created_at`. **MUST NOT** use commit timestamps (`committer.date` / `author.date`) — they are preserved through rebase/cherry-pick and will under-report post-comment work. The PR-level `updated_at` is coarse (bumps on every comment too) but robust.
-
-Attach to the comment record as `staleness_signals`:
-- `acknowledged_by: [list of users who reacted positively]` (empty if none)
-- `author_followups: [{id, body_preview, created_at}]` (empty if none)
-- `pr_updated_since_comment: true|false` (coarse signal — treat as "activity happened" not "work done")
-
-If no actionable comments found (inline + issue-level combined), return: "No review comments found."
-
-## Step 3: Partition outdated
-
-**Inline review comments only.** Review comments where `line` is `null` are outdated. Split into outdated and active groups.
-
-**MUST NOT** apply this rule to PR-level issue comments — they structurally have no `line` field and would all be misclassified as outdated.
-
-For each outdated comment, generate a one-line plain-language summary.
-
-## Step 4: Triage Copilot comments
-
-From the **bot inline review comments** only, separate into Copilot (user contains "copilot" case-insensitive) and non-Copilot. This step targets Copilot specifically — **DO NOT** apply it to human comments or to issue-level comments.
-
-For each Copilot comment, read the referenced code and assess:
-- Noise: style nitpicks, incorrect claims, suggestions already handled, duplicates → skip
-- Legitimate: real bugs, missing error handling, actual logic issues → promote
-
-**MUST NOT** auto-triage or auto-skip human comments (`user_type == "User"`) at any step. Every actionable human comment from Step 2 and Step 3 goes to classification in Step 5.
-
-## Step 5: Classify and deduplicate
-
-For all active comments: human comments + non-Copilot bot comments + promoted Copilot comments:
-
-Classify severity:
-- Critical: Security vulnerabilities, data loss, logic errors, crash/panic
-- Major: Missing error handling, concurrency issues, performance problems, API contract violations
-- Medium: Possible edge cases, non-critical improvements, readability
-- Low/Nitpick: Naming style, comment suggestions, formatting
-
-Use reviewer labels as starting point, upgrade based on text content. Downgrade floor is Medium — **NEVER** downgrade below Medium.
-
-Deduplicate: group by same file / adjacent lines (±5) / same concern. Group severity = highest.
-
-For each comment/group, you MUST generate all three fields — DO NOT skip any:
-- **Problem**: MUST be natural language explaining what's wrong with the code. Write as if explaining to a colleague sitting next to you. DO NOT echo AI reviewer phrasing ("Consider adding...", "It is recommended that...", "Potential issue with..."). DO NOT use hedging language ("may", "could potentially", "it might be beneficial to").
-- **Wants**: MUST be natural language explaining what the reviewer wants done. Write as if explaining to a colleague sitting next to you. DO NOT copy the reviewer's suggestion verbatim.
-- **Summary**: One-line plain-language summary (used for defaults summary display).
-
-## Step 6: Build thread map
-
-For each comment processed, record: {commentId, threadId (from Step 1 data), category (fixed/skipped/outdated/copilot/etc)}
-
-## Return format
-
-**MUST** return ALL of the following sections — **DO NOT** omit any section, even if empty (use N=0). Use exact headers:
-
-### PR
-owner: {owner}
-repo: {repo}
-number: {number}
-
-### Outdated (N)
-For each: [bot] path — one-line summary (include comment ID)
-
-### Copilot Triage (N)
-For each: ✗/✓ path:line — summary — reason (include comment ID)
-
-### Critical/Major (N)
-For each: [severity] {location} (reviewer) — summary (include comment ID, all IDs for dedup groups, mark human reviewers)
-Problem: <natural language>
-Wants: <natural language>
-Staleness signals: <only for PR-level issue comments; omit for inline>
-
-### Medium/Low (N)
-For each: [severity] {location} (reviewer) — summary (include comment ID, all IDs for dedup groups, mark human reviewers)
-Problem: <natural language>
-Wants: <natural language>
-Staleness signals: <only for PR-level issue comments; omit for inline>
-
-`{location}` is `path:line` for inline review comments and `PR-level (issue comment)` for PR-level issue comments. **MUST** also mark human reviewers explicitly (e.g., `(paul-freeman, human)`) — humans and bots need visibly different labels so the main skill can apply stricter no-auto-skip rules to human feedback.
-
-`Staleness signals` format (PR-level only):
-- `Acknowledged: @user1 (rocket), @user2 (+1)` or `Acknowledged: none`
-- `Author followups: 2 comment(s) from @{author} after this one` or `Author followups: none`
-- `PR activity since comment: yes (coarse — bumps on any comment/push)` or `PR activity since comment: no`
-
-### Thread Map
-For each: commentId → threadId
+```bash
+python3 <resolve-pr-comments-skill-dir>/scripts/fetch-comments.py
 ```
 
-## Dispatch instructions
+For an explicit PR:
 
-```python
-Agent(
-    name="pr-comments-gatherer",
-    description="Gather PR review comments",
-    prompt=<filled template above>,
-    model="sonnet",
-    mode="bypassPermissions"
-)
+```bash
+python3 <resolve-pr-comments-skill-dir>/scripts/fetch-comments.py --repo OWNER/REPO --pr 123
+python3 <resolve-pr-comments-skill-dir>/scripts/fetch-comments.py --url https://github.com/OWNER/REPO/pull/123
 ```
 
-Parse the returned text to extract the structured data for Steps 2-6 of the main skill.
+The script fetches PR metadata first, then fetches PR-level comments, review submissions, and review threads through independent paginated GraphQL queries in parallel. This replaces the old serial REST fetch flow. Do not add ad hoc REST calls unless profiling shows the script is the bottleneck.
+
+See `data-contract.md` for the JSON shape.
+
+## Fallback Fetch
+
+If the script cannot run, use `gh api graphql` directly. Fetch these independent data groups in parallel when the agent environment supports parallel tool calls:
+
+- PR metadata
+- review threads with `isResolved`, `isOutdated`, path, line, and thread comments
+- PR-level conversation comments
+- review submissions
+
+Use `gh` only. Do not use GitHub MCP tools for thread-aware review data.
+
+## Glossary
+
+- **Inline comment**: a comment inside a GitHub review thread. It has `thread_id`, `is_resolved`, and `is_outdated`.
+- **PR-level comment**: a conversation comment on the PR. It has no resolved state.
+- **Review body**: the top-level body of a submitted review.
+- **Actionable comment**: feedback that maps to `Fix`, `Defer`, `Reply only`, or `Skip`.
+- **Reply-only**: no code change needed, but a GitHub reply should explain the decision.
+
+## Reviewer Signal Matrix
+
+| Reviewer | Signal quality | Handling |
+| --- | --- | --- |
+| Human | Highest priority | Never auto-skip. If ambiguous, present it with `Reply only` or `Defer`. |
+| CodeRabbit | High signal, non-trivial false positives | Treat as a credible hypothesis; require current-code evidence before `Fix`. |
+| Codex | High signal, non-trivial false positives | Treat as a credible hypothesis; verify against diff, surrounding code, tests, and repo conventions before `Fix`. |
+| Cursor | Medium signal | Verify carefully; useful but often context-thin. |
+| Copilot | Low/variable signal | Triage before presentation; auto-skip only clear noise after code check. |
+| Unknown bot | Low signal | Require concrete evidence before queuing any fix. |
+
+Signal quality affects review order and scrutiny, not the final decision. Never recommend `Fix` only because the reviewer has high signal. A `Fix` recommendation requires current-code evidence plus an impact explanation.
+
+## Classification Rules
+
+1. Drop resolved inline threads.
+2. Put unresolved `is_outdated: true` inline threads in `outdated[]` unless current code still clearly contains the issue.
+3. Drop PR-level comments containing `<!-- resolve-pr-comments:reply -->`; these are prior skill replies.
+4. Drop PR-author status updates from actionable candidates. Use them only as staleness or discussion signals.
+5. Classify remaining PR-level comments and review bodies into bot noise, conversational, or actionable.
+6. Classify active inline threads into actionable candidates.
+
+When in doubt, include. Over-including is recoverable in review; dropping substantive human feedback is invisible.
+
+## PR-Level Staleness Signals
+
+For each actionable PR-level comment, attach:
+
+- `acknowledged_by`: positive reactions from the original reviewer or PR author.
+- `author_followups`: later PR-author comments that mention the reviewer or quote the original.
+- `pr_updated_since_comment`: whether PR `updated_at` is later than the comment timestamp.
+
+Never auto-skip from these signals alone. Show them to the user.
+
+## Severity Rules
+
+Use concrete triggers, then verify against code.
+
+| Severity | Triggers | Anti-triggers |
+| --- | --- | --- |
+| Critical | security leak, SQL injection, auth bypass, data loss, panic/crash on normal input, race condition corrupting state | style, naming, optional refactor, unclear wording |
+| Major | missing error handling that breaks flow, API contract violation, wrong query semantics, real performance regression, migration/deploy risk, goroutine/resource leak | "consider extracting", "might be confusing", cosmetic cleanup |
+| Medium | edge case with bounded impact, missing test for changed behavior, readability issue that affects maintenance, non-blocking performance concern | pure preference, local naming nit |
+| Low | formatting, naming, comment wording, minor simplification, clearly optional cleanup | human-requested behavior change, correctness risk |
+
+Human comments default to at least Medium unless they are clearly style-only. Bot comments can be Low. Copilot comments can be skipped only after checking the referenced code.
+
+## Deduplication Rules
+
+Only merge comments when all are true:
+
+- Same file or same PR-level topic.
+- Locations are adjacent enough to be part of the same code path, or the comments mention the same function/type/API.
+- The requested action category matches: add, remove, rename, refactor, test, validate, document, or reply.
+- At least two meaningful keywords overlap in Problem/Wants, ignoring stop words and generic words like "code", "issue", "change".
+
+Do not merge comments just because they are close together. If reviewers point at adjacent lines but ask for different actions, keep them separate.
+
+## Output
+
+Return structured data with:
+
+- `pr`
+- `outdated[]`
+- `copilot_triage[]`
+- `critical_major[]`
+- `medium_low[]`
+- `reply_only[]`
+- `deferred[]`
+- `thread_map[]`
+
+Each actionable item must include:
+
+- `ids`: all comment IDs in the group
+- `thread_ids`: inline items only; all review thread IDs represented by the group
+- `source_type`: inline, pr_level, or review_body
+- `reviewer`: login and human/bot label
+- `signal_quality`: from the matrix
+- `severity`
+- `location`
+- `summary`
+- `problem`
+- `wants`
+- `evidence`
+- `confidence`: High, Medium, or Low
+- `recommendation`: Fix, Defer, Reply only, or Skip
+- `reason`: short rationale for the recommendation
+- `risk_if_skipped`: required for Medium/Low compact cards and any `Skip` or `Defer` recommendation
+- `original`: raw reviewer text
+- `signals`: PR-level staleness signals when applicable
+
+`thread_map[]` should map inline items to `thread_ids`, `comment_ids`, category, and planned reply intent so Step 6 can post replies and resolve only processed threads.

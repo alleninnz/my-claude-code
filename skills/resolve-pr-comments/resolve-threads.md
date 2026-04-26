@@ -7,6 +7,8 @@
 | Category | Reply content |
 |----------|---------------|
 | Fixed (Step 3 or reviewed Step 4) | "Fixed in \<commit\>. \<brief explanation\>" |
+| Deferred | "Valid concern; not addressed in this PR. Follow-up: \<tracking issue or draft title\>." Do not claim a real issue exists unless it was created. |
+| Reply only | Concise technical answer explaining why no code change is needed. |
 | Explicitly skipped (Step 3 or reviewed Step 4) | Concise technical reason (e.g., "Follows existing codebase convention") |
 | Skipped Medium/Low | One-line reason (e.g., "Style preference — not addressing in this PR") |
 | Auto-skipped Copilot noise | One-line reason (e.g., "Not applicable — Go 1.22+ fixed loop variable semantics") |
@@ -44,26 +46,26 @@ gh api repos/{owner}/{repo}/issues/{number}/comments \
 
 ## Resolve threads
 
-Re-fetch unresolved thread IDs (threads may have changed since Step 1):
+Re-fetch unresolved thread IDs for processed inline `thread_ids` (threads may have changed since Step 1). Paginate until every processed thread ID has been seen or `hasNextPage` is false:
 
 ```bash
-gh api graphql -F owner='{owner}' -F repo='{repo}' -F number={number} -f query='
-  query($owner: String!, $repo: String!, $number: Int!) {
+gh api graphql --paginate -F owner='{owner}' -F repo='{repo}' -F number={number} -f query='
+  query($owner: String!, $repo: String!, $number: Int!, $endCursor: String) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $number) {
-        reviewThreads(first: 100) {
+        reviewThreads(first: 100, after: $endCursor) {
+          pageInfo { hasNextPage endCursor }
           nodes {
             id
             isResolved
-            comments(first: 1) { nodes { databaseId } }
           }
         }
       }
     }
-  }' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | {threadId: .id, commentId: .comments.nodes[0].databaseId}'
+  }' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | .id'
 ```
 
-Match thread comment IDs to those processed in this run. Resolve each:
+Match processed inline `thread_ids` to currently unresolved thread IDs. Resolve each matching thread ID. If a processed thread is no longer unresolved, skip it as already resolved. Do not resolve by comment ID.
 
 ```bash
 gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<threadId>"}) { thread { isResolved } } }' > /dev/null
@@ -72,3 +74,7 @@ gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<thre
 ## Deduplicated groups
 
 **MUST** reply to each comment individually (same reply body), resolve each thread independently. **DO NOT** skip any comment in a deduplicated group.
+
+## PR-Level Comments
+
+PR-level comments cannot be resolved like review threads. Post the marked reply and leave no thread-resolution mutation for them. The marker prevents the reply from resurfacing on repeat runs.

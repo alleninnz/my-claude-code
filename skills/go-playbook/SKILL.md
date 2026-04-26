@@ -1,6 +1,10 @@
 ---
 name: go-playbook
-description: Use when a Go task needs guidance on error ownership, logging, stdlib-vs-custom helper choices, version-specific APIs, concurrency, testing, package/interface design, performance, gRPC/protobuf, database/sql, Ent, or tooling decisions.
+description: >
+  Use when a Go task needs guidance on error ownership, logging,
+  stdlib-vs-custom helper choices, version-specific APIs, concurrency, testing,
+  package/interface design, performance, gRPC/protobuf, database/sql, Ent, or
+  tooling decisions.
 ---
 
 # Go Playbook (1.21-1.26)

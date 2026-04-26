@@ -7,7 +7,4 @@
 # Linter cache
 .rumdl_cache/
 
-# docs
-docs/
-
 .claude/

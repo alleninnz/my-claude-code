@@ -1,6 +1,10 @@
 ---
 name: pr
-description: Use when handling /pr create, /pr update, /pr merge, /pr close, /pr reopen, /pr draft, or /pr ready for pull request creation, synchronization, state changes, or merge conventions. Not for PR review comments; use resolve-pr-comments.
+description: >
+  Use when handling /pr create, /pr update, /pr merge, /pr close, /pr reopen,
+  /pr draft, or /pr ready for pull request creation, synchronization, state
+  changes, or merge conventions. Not for PR review comments; use
+  resolve-pr-comments.
 ---
 
 # PR Conventions

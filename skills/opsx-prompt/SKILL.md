@@ -31,21 +31,30 @@ This skill does NOT:
 ## Input
 
 - `APP-XXXXX` issue ID
+- `--deep APP-XXXXX` or `APP-XXXXX --deep`: generate the prompt and run deep review in the same pass
 - freeform change description
 - no input: ask what change the user wants to describe
 
-If the input is an issue ID, prefer `linear-cli:linear-cli`, then any available Linear MCP tools. If no Linear integration is available, ask the user to paste the issue title, description, and relevant comments.
+If the input is an issue ID, use the `linear-cli` skill. Do not use Linear MCP tools. If `linear-cli` is unavailable, ask the user to export the issue and paste the result:
+
+```bash
+linear issue view APP-XXXXX --json --no-pager > /tmp/APP-XXXXX.json
+```
 
 ## Optional Repo Context
 
-Repo context is only needed for Phase 3 or Phase 5.
+Repo context is needed only for the cheap already-done check, Phase 3, or Phase 5.
 
-Workspace root:
+Resolve repo context in this order:
 
-- preferred: `~/.caruso/config.yaml` -> `workspace_path`
-- fallback: walk up from cwd until `openspec/` is found and use its parent
+1. Explicit repo or service path from the user.
+2. `~/Caruso/config.yaml` -> `workspace_path`; treat this as the workspace root, then resolve `{service}` under `worktrees/` or direct service folders.
+3. `~/.caruso/config.yaml` -> `workspace_path`; treat this as the workspace root, then resolve `{service}` under `worktrees/` or direct service folders.
+4. Current directory if it is inside the target git repo.
+5. `~/Caruso/worktrees/{service}-*` when exactly one matching worktree exists.
+6. `~/Caruso/{service}`.
 
-Infer the target repo from the issue title (`service-name | description`) or ask the user.
+Infer `{service}` from the issue title (`service-name | description`) or ask the user. If multiple matching worktrees exist, ask which one to use.
 
 If Phase 3 or Phase 5 is needed but repo context cannot be resolved:
 
@@ -53,13 +62,24 @@ If Phase 3 or Phase 5 is needed but repo context cannot be resolved:
 2. If the user cannot provide it and still wants a prompt, skip code-based checks and surface a user note: `Sanity check skipped: repo unavailable`.
 3. Do not silently pretend the ticket was grounded against code.
 
+If repo context is missing only for the Phase 1 already-done check, continue from linked Linear PRs/comments. Do not emit `Sanity check skipped` for that alone.
+
 ## Phase 1: Read The Request
 
 Issue mode:
 
 1. Fetch the issue title, description, comments, parent or sub-issue summary, and linked PRs.
-2. Identify work that already landed.
-3. Do not read code yet.
+2. Check child/sub-issue data from `linear issue view APP-XXXXX --json --no-pager`. Do not use `linear issue relation list`; it reports dependency relations, not parent-child issue membership. If the requested issue is a parent with more than one child issue, stop and ask whether to generate one combined prompt or one prompt per child issue.
+3. Run a cheap already-done check when a target repo can be inferred or provided:
+   ```bash
+   cd {REPO_PATH}
+   OWNER_REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+   gh search prs "APP-XXXXX" --repo "$OWNER_REPO" --json number,title,state,url,updatedAt --limit 20
+   git log --all --grep="APP-XXXXX" --oneline -n 20
+   ```
+4. If `gh` is unavailable or unauthenticated, skip the PR search and keep going; this cheap check is not a blocker. Still run the local `git log` check when repo context exists.
+5. Identify work that already landed from linked PRs, searched PRs, or matching commits. Treat a result as `Already done` only when the PR/commit clearly matches the requested outcome.
+6. Do not read code yet.
 
 Freeform mode:
 
@@ -68,7 +88,7 @@ Freeform mode:
 
 ## Phase 2: Extract Intent
 
-Produce a structured summary:
+Produce a structured summary for both issue and freeform mode:
 
 - `Why`
 - `What`
@@ -78,11 +98,25 @@ Produce a structured summary:
 - `Unknowns`
 - `Raw claims`
 
+Freeform mode still uses this schema. `Already done` is usually `(n/a)`. `Non-goals` should be `(none)` unless the user states a boundary. `Raw claims` may be `(none)`.
+
 `Raw claims` is internal support data, not prompt content. Use it to preserve:
 
 - named symbols or paths mentioned by the ticket
 - explicit scope boundaries like "do not change X"
 - literal deliverables that must survive prompt generation
+
+Use this exact line-oriented format:
+
+```text
+[symbol] CompletedUnitPrice
+[path] proto/pricing/v1/pricing.proto
+[boundary] do not change pricing rules
+[deliverable] rename CompletedUnitPrice to FinalCompletedUnitPrice
+[contract] response field used by downstream consumers
+```
+
+If there are no raw claims, write `(none)`.
 
 Rules:
 
@@ -92,6 +126,7 @@ Rules:
 - if the ticket is ambiguous, record that in `Unknowns` instead of guessing
 - route non-blocking `Unknowns` into Phase 4's `Open questions`
 - if an unknown would make the prompt likely false, stop instead of downgrading it to an open question
+- keep `Raw claims` literal and tagged; do not turn it into prose
 
 ## Phase 3: Light Sanity Check
 
@@ -128,7 +163,8 @@ Rules:
 - `Non-scope` comes from explicit ticket boundaries
 - non-blocking `Unknowns` become `Open questions`
 - if Phase 3 found a mismatch, use corrected domain-level wording in the prompt and surface the mismatch as a user note
-- if a literal ask cannot be paraphrased to domain level without losing load-bearing meaning, keep the main prompt domain-level and surface the exact ask in a `Symbol-sensitive requirements` user note
+- if a literal ask names an external API, schema, field, event, RPC, or user-visible contract and that literal is necessary to preserve the deliverable, include it in the main prompt under `Literal deliverables`
+- if a literal ask names internal implementation detail such as file paths, helper functions, or private symbols, keep the main prompt domain-level and surface the exact ask in a `Symbol-sensitive requirements` user note
 - if the exact symbol-level detail is the core of the request and cannot be represented safely even with a note, stop and ask for clarification
 - for freeform requests, derive the title from the requested outcome; use repo-derived service if clear, otherwise `unknown-service`, and use `no-issue`
 - if the ticket is still materially unclear, stop and ask for clarification instead of fabricating certainty
@@ -166,6 +202,15 @@ Optional flow:
 2. Offer deep review if the user wants it
 3. Keep deep-review findings outside the prompt unless the user asks to revise it
 
+`--deep` flow:
+
+1. Read and extract intent once.
+2. Run Phase 3 if needed.
+3. Generate the prompt.
+4. Run Phase 5 immediately from the same intent; do not re-fetch Linear or re-extract intent.
+5. Present the prompt first, then deep-review notes outside the fenced prompt.
+6. Do not ask a second time whether to run deep review.
+
 User-facing choices should stay simple:
 
 - `Generate prompt`
@@ -186,6 +231,7 @@ Stop instead of generating a prompt if:
 
 - No argument: ask for an issue ID or short description
 - Ticket already done: show `Already in place` and ask whether the user still wants a prompt
+- Parent issue with multiple child issues: ask whether to generate one combined prompt or one prompt per child issue
 - Multi-repo issue: keep one prompt, but note the affected repos in `Open questions` or the user note
 - No repo available: still generate the prompt if Phase 3 and Phase 5 are unnecessary
 - No repo available when Phase 3 or Phase 5 would otherwise run: ask for repo path first; if unavailable, proceed only with an explicit `Sanity check skipped` user note
