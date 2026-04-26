@@ -7,8 +7,9 @@
     {
       "name": "my-claude-codex",
       "source": {
-        "source": "local",
-        "path": "./"
+        "source": "url",
+        "url": "https://github.com/alleninnz/my-claude-codex.git",
+        "ref": "main"
       },
       "policy": {
         "installation": "AVAILABLE",
