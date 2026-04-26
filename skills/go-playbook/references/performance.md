@@ -1,7 +1,5 @@
 # Performance
 
-Version-gated runtime behavior in this file requires the module's `go.mod` `go` directive or deployment toolchain to be at or above the version shown in the heading.
-
 ## Performance
 
 ### PGO (Profile-Guided Optimization, 1.21+ GA)

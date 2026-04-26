@@ -1,9 +1,9 @@
 ---
 name: pr
 description: >
-  Use when handling /pr create, /pr update, /pr merge, /pr close, /pr reopen,
-  /pr draft, or /pr ready for pull request creation, synchronization, state
-  changes, or merge conventions. Not for PR review comments; use
+  Use when the user asks to create, update, synchronize, merge, close, reopen,
+  mark draft, or mark ready a pull request, or when PR title, body, merge, or
+  publish authorization conventions matter. Not for PR review comments; use
   resolve-pr-comments.
 ---
 
@@ -13,9 +13,9 @@ This skill defines PR workflow conventions, authorization boundaries, and non-ob
 
 ## Authorization
 
-Invoking `/pr create`, `/pr update`, or `/pr merge` is explicit user confirmation for the necessary scoped commit, push, PR edit, or PR merge action in that command.
+A user request to create, update, synchronize, or merge a PR is explicit confirmation for the necessary scoped commit, push, PR edit, or PR merge action in that request.
 
-Invoking `/pr close`, `/pr reopen`, `/pr draft`, or `/pr ready` is explicit user confirmation for that requested PR state change.
+A user request to close, reopen, mark draft, or mark ready a PR is explicit confirmation for that requested PR state change.
 
 Still ask before:
 
@@ -27,7 +27,7 @@ Still ask before:
 
 ## Commit Review Gate
 
-Before an automatic commit in `/pr create` or `/pr update`:
+Before an automatic commit while creating or updating a PR:
 
 - Stage only intended files.
 - Run `coderabbit:review` with `type: uncommitted` for non-trivial changes, or the available CodeRabbit uncommitted-review equivalent.
@@ -55,5 +55,5 @@ Applicable verification means the checks that can prove the actual changed surfa
 - Worktree merge cleanup: if CWD is inside a worktree, use `git worktree remove`; do not checkout base inside the worktree.
 - `gh pr diff --stat` does not exist; use `gh pr view --json files`.
 - `git branch -d` can fail after squash merge; use `-D` only when PR is confirmed merged.
-- Rerunning `/pr create` on an existing PR should report the existing PR and treat further synchronization as `/pr update`, not create another PR.
+- Repeating PR creation on an existing PR should report the existing PR and treat further work as PR update/synchronization, not create another PR.
 - Never use `--delete-branch` when closing a PR.

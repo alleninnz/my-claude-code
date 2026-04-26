@@ -1,6 +1,6 @@
 # my-claude-codex
 
-Claude Code and Codex plugin for Go development — shared skills and workflow helpers.
+Claude Code and Codex plugin for Go development, MySQL/Aurora guidance, implementation discipline, PR workflows, opsx prompts, and technical writing.
 
 ## Install
 

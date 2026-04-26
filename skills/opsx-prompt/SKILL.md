@@ -41,6 +41,17 @@ If the input is an issue ID, use the `linear-cli` skill. Do not use Linear MCP t
 linear issue view APP-XXXXX --json --no-pager > /tmp/APP-XXXXX.json
 ```
 
+## Flow
+
+| Input | Phase 1: read | Phase 2: extract | Phase 3: sanity | Phase 4: prompt | Phase 5: deep review |
+| --- | --- | --- | --- | --- | --- |
+| Issue ID | Yes | Yes | If needed | Yes | No |
+| Issue ID + `--deep` | Yes | Yes | If needed | Yes | Yes, from same intent |
+| Freeform request | Yes | Yes | Usually no | Yes | No |
+| Already-done issue | Yes | Yes | No unless symbols need grounding | Ask whether a prompt is still wanted | No unless requested |
+
+Default to the shortest flow that can faithfully express the request. Never re-fetch Linear or re-extract intent between Phase 4 and Phase 5 in `--deep` mode.
+
 ## Optional Repo Context
 
 Repo context is needed only for the cheap already-done check, Phase 3, or Phase 5.
@@ -189,27 +200,7 @@ Do NOT merge deep-review findings into the prompt automatically. This includes `
 
 ## Presentation
 
-Default flow:
-
-1. Read issue
-2. Extract intent
-3. Run light sanity check only if needed
-4. Present the prompt
-
-Optional flow:
-
-1. Present the prompt
-2. Offer deep review if the user wants it
-3. Keep deep-review findings outside the prompt unless the user asks to revise it
-
-`--deep` flow:
-
-1. Read and extract intent once.
-2. Run Phase 3 if needed.
-3. Generate the prompt.
-4. Run Phase 5 immediately from the same intent; do not re-fetch Linear or re-extract intent.
-5. Present the prompt first, then deep-review notes outside the fenced prompt.
-6. Do not ask a second time whether to run deep review.
+Present the prompt first. If deep review ran, put deep-review notes after the prompt and outside the fenced prompt. Do not merge deep-review findings into the prompt unless the user explicitly asks to revise it.
 
 User-facing choices should stay simple:
 

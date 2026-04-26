@@ -29,22 +29,22 @@ Before using version-specific APIs, check the repo's `go.mod` `go` directive. If
 
 ## Quick Reference
 
-| Idiom | Pattern | Section |
-|-------|---------|---------|
-| Error matching | `errors.AsType[*T](err)` (1.26) | `references/errors.md` |
-| Error wrapping | `fmt.Errorf("context: %w", err)` | `references/errors.md` |
-| Error ownership | Trace source -> wrap -> classify -> log -> transport map | `references/errors.md` |
-| New helper gate | Existing repo -> stdlib -> compiler-backed stdlib -> go.mod deps -> custom | `references/design.md` |
-| Goroutine launch | `wg.Go(func() { ... })` (1.25) | `references/concurrency.md` |
-| Bounded parallelism | `conc/pool` with `WithMaxGoroutines` | `references/concurrency.md` |
-| Iterators | `iter.Seq[V]`, `iter.Seq2[K,V]` (1.23) | `references/version-notes.md` |
-| HTTP routing | `mux.HandleFunc("GET /users/{id}", h)` (1.22) | `references/version-notes.md` |
-| Test concurrency | `testing/synctest` virtual time (1.25) | `references/testing.md` |
-| Benchmarks | `b.Loop()` (1.24) | `references/testing.md` |
-| Logging | `slog.NewMultiHandler` (1.26) | `references/logging.md` |
-| Container perf | Auto GOMAXPROCS from cgroup (1.25) | `references/performance.md` |
-| GC | Green Tea GC default (1.26) | `references/performance.md` |
-| Lint | `golangci-lint v2` with `go tool` (1.24) | `references/tooling.md` |
+| Idiom | Min Go | Pattern | Section |
+|-------|--------|---------|---------|
+| Error matching | 1.26 | `errors.AsType[*T](err)` | `references/errors.md` |
+| Error wrapping | Any | `fmt.Errorf("context: %w", err)` | `references/errors.md` |
+| Error ownership | Any | Trace source -> wrap -> classify -> log -> transport map | `references/errors.md` |
+| New helper gate | Any | Existing repo -> stdlib -> compiler-backed stdlib -> go.mod deps -> custom | `references/design.md` |
+| Goroutine launch | 1.25 | `wg.Go(func() { ... })` | `references/concurrency.md` |
+| Bounded parallelism | Dependency | `conc/pool` with `WithMaxGoroutines` | `references/concurrency.md` |
+| Iterators | 1.23 | `iter.Seq[V]`, `iter.Seq2[K,V]` | `references/version-notes.md` |
+| HTTP routing | 1.22 | `mux.HandleFunc("GET /users/{id}", h)` | `references/version-notes.md` |
+| Test concurrency | 1.25 | `testing/synctest` virtual time | `references/testing.md` |
+| Benchmarks | 1.24 | `b.Loop()` | `references/testing.md` |
+| Logging fan-out | 1.26 | `slog.NewMultiHandler` | `references/logging.md` |
+| Container perf | 1.25 | Auto GOMAXPROCS from cgroup | `references/performance.md` |
+| GC | 1.26 | Green Tea GC default | `references/performance.md` |
+| Lint | 1.24 | `golangci-lint v2` with `go tool` | `references/tooling.md` |
 
 ## Reference Routing
 

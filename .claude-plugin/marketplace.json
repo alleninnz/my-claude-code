@@ -1,14 +1,14 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "my-claude-codex",
-  "description": "Go development toolkit for Claude Code",
+  "description": "Claude Code and Codex plugin for Go development, MySQL/Aurora guidance, implementation discipline, PR workflows, opsx prompts, and technical writing.",
   "owner": {
     "name": "Ethan"
   },
   "plugins": [
     {
       "name": "my-claude-codex",
-      "description": "Claude Code plugin for Go development — skills and workflow helpers.",
+      "description": "Claude Code and Codex plugin for Go development, MySQL/Aurora guidance, implementation discipline, PR workflows, opsx prompts, and technical writing.",
       "version": "0.0.1",
       "source": "./",
       "category": "development",

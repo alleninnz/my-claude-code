@@ -60,6 +60,7 @@ git diff --name-only master...HEAD -- '*.go'
 
 5. Apply selected items one group at a time.
    - Keep each group patch-scoped and reversible without touching unrelated user edits.
+   - After each group, format only the touched Go files using the repo's existing formatter command. Prefer existing `make fmt`, `just fmt`, package scripts, or documented CI formatter; otherwise use `gofmt` on touched files. Use `goimports` or `gofumpt` only when the repo already uses them.
    - Inspect the diff for the group before verification.
    - If verification finds a new failure attributable to that group, reverse only that group's patch. Do not use broad `git reset` or `git checkout` unless the user explicitly asks.
 
@@ -92,6 +93,7 @@ git diff --name-only master...HEAD -- '*.go'
 
 - Applying staticcheck fixes before user approval
 - Treating file/function size as a refactor mandate
+- Skipping the repo formatter after changing Go files
 - Removing error wrapping without checking classification
 - Extracting a helper that makes the call site harder to read
 - Verifying only with build when affected tests are available

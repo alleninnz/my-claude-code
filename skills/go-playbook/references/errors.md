@@ -1,7 +1,5 @@
 # Errors
 
-Version-gated APIs in this file require the module's `go.mod` `go` directive to be at or above the version shown in the heading.
-
 ## Error Handling
 
 **Wrap with context — always use `%w` unless deliberately hiding internals:**

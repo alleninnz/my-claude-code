@@ -1,6 +1,6 @@
 {
   "name": "my-claude-codex",
-  "description": "Claude Code plugin for Go development — skills and workflow helpers.",
+  "description": "Claude Code and Codex plugin for Go development, MySQL/Aurora guidance, implementation discipline, PR workflows, opsx prompts, and technical writing.",
   "version": "0.0.1",
   "author": {
     "name": "Ethan"

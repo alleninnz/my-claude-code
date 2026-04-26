@@ -1,7 +1,5 @@
 # Concurrency
 
-Version-gated APIs in this file require the module's `go.mod` `go` directive to be at or above the version shown in the heading.
-
 ## Concurrency
 
 ### WaitGroup.Go (1.25+)

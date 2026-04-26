@@ -12,8 +12,21 @@ import json
 import re
 import subprocess
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
+
+MAX_GRAPHQL_ATTEMPTS = 3
+TRANSIENT_ERROR_PATTERNS = (
+    "timeout",
+    "timed out",
+    "502",
+    "503",
+    "504",
+    "server error",
+    "temporarily unavailable",
+    "connection reset",
+)
 
 
 PR_QUERY = """\
@@ -126,6 +139,11 @@ def run_json(cmd: list[str], stdin: str | None = None) -> dict[str, Any]:
         return json.loads(out)
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"Failed to parse JSON from {' '.join(cmd)}:\n{out}") from exc
+
+
+def is_transient_error(message: str) -> bool:
+    text = message.lower()
+    return any(pattern in text for pattern in TRANSIENT_ERROR_PATTERNS)
 
 
 def ensure_gh_auth() -> None:
@@ -242,7 +260,23 @@ def gh_graphql(query: str, owner: str, repo: str, number: int, cursor: str | Non
     ]
     if cursor:
         cmd.extend(["-F", f"cursor={cursor}"])
-    return run_json(cmd, stdin=query)
+
+    for attempt in range(1, MAX_GRAPHQL_ATTEMPTS + 1):
+        try:
+            payload = run_json(cmd, stdin=query)
+        except RuntimeError as exc:
+            if attempt < MAX_GRAPHQL_ATTEMPTS and is_transient_error(str(exc)):
+                time.sleep(0.5 * attempt)
+                continue
+            raise
+
+        errors = payload.get("errors")
+        if errors and attempt < MAX_GRAPHQL_ATTEMPTS and is_transient_error(json.dumps(errors)):
+            time.sleep(0.5 * attempt)
+            continue
+        return payload
+
+    raise RuntimeError("unreachable GraphQL retry state")
 
 
 def fetch_pr(owner: str, repo: str, number: int) -> dict[str, Any]:
@@ -262,6 +296,38 @@ def fetch_pr(owner: str, repo: str, number: int) -> dict[str, Any]:
         "head_sha": pr["headRefOid"],
         "updated_at": pr["updatedAt"],
     }
+
+
+def local_head_sha() -> str | None:
+    try:
+        return run(["git", "rev-parse", "HEAD"]).strip()
+    except RuntimeError:
+        return None
+
+
+def local_repo_matches(owner: str, repo: str) -> bool:
+    try:
+        name = run(["gh", "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]).strip()
+    except RuntimeError:
+        return False
+    return name.lower() == f"{owner}/{repo}".lower()
+
+
+def ensure_local_head_matches(owner: str, repo: str, pr_meta: dict[str, Any]) -> None:
+    if not local_repo_matches(owner, repo):
+        return
+
+    local_sha = local_head_sha()
+    if not local_sha:
+        return
+
+    pr_sha = pr_meta["head_sha"]
+    if local_sha != pr_sha:
+        raise RuntimeError(
+            "Local checkout does not match PR head. "
+            f"local HEAD={local_sha}, PR head={pr_sha}. "
+            "Checkout or update the PR branch before resolving comments."
+        )
 
 
 def fetch_comments(owner: str, repo: str, number: int) -> list[dict[str, Any]]:
@@ -311,6 +377,8 @@ def fetch_threads(owner: str, repo: str, number: int) -> list[dict[str, Any]]:
 
 def fetch_all(owner: str, repo: str, number: int) -> dict[str, Any]:
     pr_meta = fetch_pr(owner, repo, number)
+    ensure_local_head_matches(owner, repo, pr_meta)
+
     with ThreadPoolExecutor(max_workers=3) as executor:
         comments = executor.submit(fetch_comments, owner, repo, number)
         reviews = executor.submit(fetch_reviews, owner, repo, number)

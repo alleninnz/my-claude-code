@@ -17,7 +17,7 @@ python3 <resolve-pr-comments-skill-dir>/scripts/fetch-comments.py --repo OWNER/R
 python3 <resolve-pr-comments-skill-dir>/scripts/fetch-comments.py --url https://github.com/OWNER/REPO/pull/123
 ```
 
-The script fetches PR metadata first, then fetches PR-level comments, review submissions, and review threads through independent paginated GraphQL queries in parallel. This replaces the old serial REST fetch flow. Do not add ad hoc REST calls unless profiling shows the script is the bottleneck.
+The script fetches PR metadata first, checks local HEAD against the PR head when running inside a git checkout, then fetches PR-level comments, review submissions, and review threads through independent paginated GraphQL queries in parallel. This replaces the old serial REST fetch flow. Do not add ad hoc REST calls unless profiling shows the script is the bottleneck.
 
 See `data-contract.md` for the JSON shape.
 
