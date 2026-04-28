@@ -6,6 +6,10 @@ Use clear, direct language. Keep sentences short. Lead with the decision-relevan
 
 Present Critical/Major items one at a time after reading `deep-analysis.md`.
 
+Critical/Major is an inbox flow, not a review report. Present exactly one deduplicated item, ask for a decision on that item, and stop. A recommendation is allowed, but it is advisory only; the user must explicitly choose `Fix`, `Defer`, `Reply only`, or `Skip` before you move to the next Critical/Major item.
+
+Never show multiple Critical/Major cards in one response. Never ask the user to decide a set of Critical/Major items together. Never proceed from one Critical/Major item to another based on the recommendation alone, including obvious false positives.
+
 Each item must include:
 
 - Problem
@@ -28,7 +32,7 @@ Decision choices:
 | Reply only | Queue a GitHub reply without code changes. |
 | Skip | Do not change code; queue a concise skip reason if the thread will be resolved. |
 
-Use `AskUserQuestion` with `["Fix", "Defer", "Reply only", "Skip"]` in Claude Code. In Codex, ask and stop.
+Use `AskUserQuestion` with `["Fix", "Defer", "Reply only", "Skip"]` in Claude Code. In Codex, ask and stop. Record the decision before showing the next Critical/Major item.
 
 ## Medium/Low Pages
 
@@ -39,13 +43,17 @@ Use compact cards by default. Present 5 items per page with global numbering:
 
 #1 [Medium] [coderabbit] path/to/file.go:88 - Fix
 Problem: handler ignores request cancellation.
+Wants: stop the worker when the request context is cancelled.
 Evidence: goroutine waits on work channel without a ctx.Done() branch.
+Recommendation: Fix.
 Reason: local fix prevents work from surviving the request lifecycle.
 Risk if skipped: timed-out requests can leave work running.
 
 #2 [Low] [coderabbit] path/to/model.go:33 - Skip
 Problem: reviewer wants an unused option removed.
+Wants: delete the option from this handler.
 Evidence: neighboring handlers keep the same unused option for interface symmetry.
+Recommendation: Skip.
 Reason: preserving the option keeps this handler consistent with adjacent code.
 Risk if skipped: low; preserves repo convention.
 

@@ -55,13 +55,15 @@ Read `data-gather.md` and `data-contract.md`, then classify the raw JSON into:
 - `deferred[]`
 - `thread_map[]`
 
+Severity controls presentation. Include reviewer-labeled Critical/Major/High/P0/P1 items in `critical_major[]` unless they are resolved, outdated, or pure bot noise. Do not move a Critical/Major item into `reply_only[]`, `deferred[]`, or `medium_low[]` just because its recommendation is `Reply only`, `Defer`, `Skip`, or a downgraded severity; keep it in `critical_major[]` so Step 3 presents it one item at a time.
+
 If the script cannot run, use the fallback fetch rules in `data-gather.md`.
 
 If all buckets are empty (`outdated[]`, `copilot_triage[]`, `critical_major[]`, `medium_low[]`, `reply_only[]`, `deferred[]`), output "No review comments found" and stop.
 
 ## Step 2 - Triage Summary
 
-Show only sections that have content:
+Show only a short count summary. Do not recommend decisions, synthesize the "main blocker", or present a global fix plan here.
 
 ```text
 ── Review Comment Triage ──────────────────
@@ -76,11 +78,15 @@ Deferred: 0
 
 For outdated and Copilot auto-triage, show one-line summaries. Do not spend user attention on full templates for already-triaged noise.
 
+After the count summary, immediately proceed to Step 3 if there are Critical/Major items. If there are no Critical/Major items, proceed to Step 4. Do not stop after the summary unless there are no actionable comments.
+
 ## Step 3 - Critical/Major Review
 
-Read `deep-analysis.md` and `interaction.md`. Present Critical/Major items one at a time using the detailed card and choices from `interaction.md`.
+Read `deep-analysis.md` and `interaction.md`. Present exactly one deduplicated Critical/Major item at a time using the detailed card and choices from `interaction.md`.
 
-If deep analysis downgrades an item below Major, move it to Step 4 instead of interrupting the user here.
+Hard rule: every Critical/Major item requires an explicit user decision before moving on. Even when the recommendation is clearly `Reply only` or `Skip`, present the card, state the recommendation, ask for a decision, and stop. Do not batch Critical/Major items, ask for decisions on multiple Critical/Major items at once, or advance to the next Critical/Major item without a recorded decision for the current one.
+
+If deep analysis downgrades a Critical/Major item below Major, keep it in the current Step 3 flow, show the downgraded severity in the card, and still ask for the user decision before moving on. Do not silently move it to Step 4 after it has entered Critical/Major review.
 
 ## Step 4 - Medium/Low Review
 
@@ -90,7 +96,7 @@ Read `interaction.md`. Use compact cards by default, 5 items per page with globa
 
 Read `implementation.md`. Show the fix plan before editing, apply queued fixes by file or behavior area, and run targeted verification when practical.
 
-Do not start fixing until every presented comment has a recorded decision.
+Do not start fixing until every actionable comment has a recorded decision. Do not present a global fix plan until all Critical/Major items have explicit recorded decisions and all Medium/Low items have either recorded decisions or explicitly accepted defaults such as `ok all`.
 
 ## Step 6 - Preview, Publish, Resolve
 
@@ -99,5 +105,6 @@ Read `implementation.md` and `resolve-threads.md`. Follow the publish lanes ther
 ## Common Mistakes
 
 - Before presenting each comment: include Evidence, Confidence, Reason, and current-code analysis; do not echo reviewer text as analysis.
-- Before fixing: every presented comment must have a recorded decision; do not merge comments with different requested actions.
+- For Critical/Major items: never summarize the whole review into one decision request; show one deduplicated item, ask for that item only, and stop.
+- Before fixing: every actionable comment must have a recorded decision or an explicitly accepted Medium/Low default; do not merge comments with different requested actions.
 - Before publishing: show diff preview and verification results; post replies before resolving threads; do not ask for permission solely to close straightforward processed threads; never claim a deferred follow-up exists unless it was created.

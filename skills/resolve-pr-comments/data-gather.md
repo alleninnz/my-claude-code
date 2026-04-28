@@ -87,6 +87,8 @@ Use concrete triggers, then verify against code.
 
 Human comments default to at least Medium unless they are clearly style-only. Bot comments can be Low. Copilot comments can be skipped only after checking the referenced code.
 
+Reviewer-labeled Critical/Major/High/P0/P1 comments start in `critical_major[]` unless they are resolved, outdated, or pure bot noise. If current-code analysis later downgrades the severity, keep the item in the Critical/Major presentation flow and show the downgraded severity in the card.
+
 ## Deduplication Rules
 
 Only merge comments when all are true:
@@ -132,3 +134,5 @@ Each actionable item must include:
 - `signals`: PR-level staleness signals when applicable
 
 `thread_map[]` should map inline items to `thread_ids`, `comment_ids`, category, and planned reply intent so Step 6 can post replies and resolve only processed threads.
+
+Presentation buckets are severity-first. A Critical/Major item with a `Reply only`, `Defer`, `Skip`, or downgraded-severity recommendation must remain in `critical_major[]`; the recommendation does not move it to `reply_only[]`, `deferred[]`, or `medium_low[]`.

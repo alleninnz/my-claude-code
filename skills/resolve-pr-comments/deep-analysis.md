@@ -52,7 +52,7 @@ Upgrade or downgrade after reading code.
 - Medium: bounded edge case, missing test for changed behavior, maintenance readability concern.
 - Low: naming, formatting, comment wording, optional simplification.
 
-If a Critical/Major item downgrades below Major, move it to Medium/Low review.
+If a Critical/Major item downgrades below Major during deep analysis, still present it in the current one-at-a-time Critical/Major flow. Show the downgraded severity in the card and ask for the user decision before moving on. Do not silently move it into a Medium/Low batch after the Critical/Major flow has started.
 
 ## Presentation Template
 

@@ -76,3 +76,5 @@ Inline actionable items must also include `thread_ids`: every review thread ID r
 Medium/Low compact cards and any `Skip` or `Defer` recommendation must include `risk_if_skipped`.
 
 `thread_map[]` tracks inline items that may need replies or resolution. Each entry should include `item_id`, `thread_ids`, `comment_ids`, `category`, and planned reply intent after user decisions are recorded.
+
+Presentation buckets are severity-first. A Critical/Major item with a `Reply only`, `Defer`, `Skip`, or downgraded-severity recommendation must remain in `critical_major[]`; the recommendation does not move it to `reply_only[]`, `deferred[]`, or `medium_low[]`.
