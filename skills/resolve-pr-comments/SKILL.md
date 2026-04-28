@@ -8,7 +8,7 @@ description: >
 
 # PR Review
 
-Work through unresolved PR review feedback with thread-aware data, independent analysis, user-controlled decisions, and explicit GitHub write confirmation.
+Work through unresolved PR review feedback with thread-aware data, independent analysis, user-controlled decisions, and low-friction GitHub thread closure.
 
 ## Prerequisites
 
@@ -20,7 +20,9 @@ Work through unresolved PR review feedback with thread-aware data, independent a
 - Use `gh` for all GitHub API calls. Do not use GitHub MCP tools for thread-aware review data.
 - Claude Code blocking choices: use `AskUserQuestion`.
 - Codex or other environments without `AskUserQuestion`: ask the question in plain text and stop until the user replies.
-- Never commit, push, post replies, or resolve threads without explicit confirmation.
+- Never commit or push without explicit confirmation.
+- In the code-fix lane, the commit/push confirmation also authorizes posting the planned replies and resolving processed threads after the pushed commit is visible on the PR. Do not ask a second time unless a publish blocker occurs.
+- For comments fixed by code, commit and push before posting "Fixed in <commit>" replies or resolving threads. For no-code comments, post planned replies and resolve processed threads after the preview. Ask before GitHub thread writes only when a publish blocker makes the planned action unsafe or stale.
 
 ## Glossary
 
@@ -90,12 +92,12 @@ Read `implementation.md`. Show the fix plan before editing, apply queued fixes b
 
 Do not start fixing until every presented comment has a recorded decision.
 
-## Step 6 - Preview, Confirm, Publish, Resolve
+## Step 6 - Preview, Publish, Resolve
 
-Read `implementation.md` and `resolve-threads.md`. Show the preview, ask for explicit confirmation, then publish replies and resolve only processed threads.
+Read `implementation.md` and `resolve-threads.md`. Follow the publish lanes there: code-fix comments are committed and pushed before reply/resolve, and that one publish confirmation covers the planned thread closure after push. No-code comments can be replied/resolved directly after the decision preview. Ask again only if a publish blocker appears.
 
 ## Common Mistakes
 
 - Before presenting each comment: include Evidence, Confidence, Reason, and current-code analysis; do not echo reviewer text as analysis.
 - Before fixing: every presented comment must have a recorded decision; do not merge comments with different requested actions.
-- Before publishing: show diff preview and verification results; post replies before resolving threads; never claim a deferred follow-up exists unless it was created.
+- Before publishing: show diff preview and verification results; post replies before resolving threads; do not ask for permission solely to close straightforward processed threads; never claim a deferred follow-up exists unless it was created.
