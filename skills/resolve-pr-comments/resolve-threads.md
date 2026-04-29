@@ -8,9 +8,8 @@
 |----------|---------------|
 | Fixed (Step 3 or reviewed Step 4) | "Fixed in \<commit\>. \<brief explanation\>" |
 | Deferred | "Valid concern; not addressed in this PR. Follow-up: \<tracking issue or draft title\>." Do not claim a real issue exists unless it was created. |
-| Reply only | Concise technical answer explaining why no code change is needed. |
-| Explicitly skipped (Step 3 or reviewed Step 4) | Concise technical reason (e.g., "Follows existing codebase convention") |
-| Skipped Medium/Low | One-line reason (e.g., "Style preference — not addressing in this PR") |
+| Reply only — substantive | Technical answer explaining why no code change is being made (e.g., "Follows existing codebase convention; AddXNote peers don't audit-log either"). |
+| Reply only — concise | One-line reason for noise/style/low-stakes items (e.g., "Style preference — not addressing in this PR"). |
 | Auto-skipped Copilot noise | One-line reason (e.g., "Not applicable — Go 1.22+ fixed loop variable semantics") |
 | Outdated | "Already addressed in \<commit\>" or "No longer applicable after \<change\>" |
 | Deduplicated groups | Same reply on each comment, referencing the shared fix |

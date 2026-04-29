@@ -37,11 +37,11 @@ Classify the reviewer's concern before recommending:
 | --- | --- | --- |
 | Valid bug | Current behavior can break, corrupt data, leak, panic, or violate a contract. | Fix |
 | Missing proof | Code may be fine, but tests or verification are missing for changed behavior. | Fix or Defer |
-| Needs decision | Product/API/backward-compatibility tradeoff. | Defer or Reply only |
-| Convention mismatch | Reviewer asks for something that conflicts with repo patterns. | Skip or Reply only |
-| Already covered | Existing guard/test/implementation handles the concern. | Reply only or Skip |
-| Stale | Diff moved or current code no longer has the issue. | Reply only or Skip |
-| Noise | Style nit or incorrect bot claim with no practical value. | Skip |
+| Needs decision | Product/API/backward-compatibility tradeoff, or refutation cannot be confirmed within this repo. | Defer, Reply only, or Needs your decision |
+| Convention mismatch | Reviewer asks for something that conflicts with repo patterns. | Reply only |
+| Already covered | Existing guard/test/implementation handles the concern. | Reply only |
+| Stale | Diff moved or current code no longer has the issue. | Reply only |
+| Noise | Style nit or incorrect bot claim with no practical value. | Reply only (concise) |
 
 ## Severity Re-Evaluation
 
@@ -60,21 +60,17 @@ If a Critical/Major item downgrades below Major during deep analysis, still pres
 ── 1/N ── [Major] ── [coderabbit] ──────────
 Path: path/to/file.go:42
 
-Problem:
-This worker ignores `ctx.Done()`. If the request times out, it can keep running after the handler returns.
+Problem: <one sentence — what can go wrong in current code if bot is right>
+Wants: <one sentence — what the reviewer is asking>
 
-Wants:
-Stop the worker when the request context is cancelled.
+Code evidence: <one of:
+  - "<file:line>: `<quoted code>`" — for positive inline claims (the bot says line X has bug Y; show line X)
+  - "<grep/diff/test result>" — for negative/cross-file claims (bot says X is missing or broken across files; show the artifact that proves or disproves it)
+  - "no concrete evidence available; bot's claim is about <absence | cross-file | ownership | process | PR-level>" — only when no in-repo artifact can confirm or deny>
 
-Evidence:
-The function receives `ctx`, but the `select` only waits on work/results channels.
-
-Analysis:
-The reviewer is right. This is a request-lifecycle leak, and the fix is local.
-
-Confidence: High
-Recommendation: Fix
-Reason: Add a `ctx.Done()` branch; it changes only cancellation behavior.
+Confidence: High | Medium | Low
+Recommendation: Fix | Defer | Reply only | Needs your decision
+Reason: <one sentence; must reference the Code evidence concretely>
 
 <details><summary>Original comment</summary>
 ...
@@ -83,7 +79,19 @@ Reason: Add a `ctx.Done()` branch; it changes only cancellation behavior.
 
 For PR-level comments, include a `Signals:` section before `Problem`.
 
-For grouped comments, synthesize all reviewer angles. Do not pick one comment and hide the rest.
+For grouped comments (multiple reviewers raising the same issue), synthesize all reviewer angles in `Wants`. Fill `Code evidence` once for the group. Do not pick one comment and hide the rest.
+
+## The One Rule
+
+`Fix` requires concrete code evidence: a `file:line` quote, a grep/diff result, or a test artifact that confirms the bot's claim in current code. Without that, `Fix` is not allowed — pick `Defer`, `Reply only`, or `Needs your decision` based on your judgment of the case:
+
+- `Defer` — the concern is real but tracked separately (must actually create the follow-up issue / draft).
+- `Reply only` — the bot's specific claim does not match current code (stale inline claim that's been fixed/moved) AND the reply will explain that.
+- `Needs your decision` — you cannot verify the claim within this repo, the case is ambiguous, or it's a cross-service/ownership/process question that the user must resolve.
+
+Do not invent code evidence to justify `Fix`. If you echoed reviewer text without checking current code, the `Code evidence` field will be empty or paraphrased — that is a signal to pick something other than `Fix`.
+
+For Medium/Low compact cards, the same rule applies: `Fix` requires `Code evidence` with a concrete artifact. The user can promote any Medium/Low item via `review N` to trigger the full Critical/Major presentation flow and one-at-a-time decision.
 
 ## Language Rules
 
@@ -101,11 +109,10 @@ Write like an engineer explaining a PR review decision, not like a reviewer, mar
 
 ### Field Duties
 
-- **Problem:** what can go wrong in the current code.
-- **Wants:** what the reviewer is asking to change.
-- **Evidence:** the concrete code fact that supports or refutes the concern.
-- **Analysis:** your judgment in 1-3 short sentences.
-- **Reason:** why the recommendation is the right next action.
+- **Problem:** what can go wrong in the current code if the bot is right. One sentence.
+- **Wants:** what the reviewer is asking to change. One sentence.
+- **Code evidence:** the concrete artifact in current code that confirms or refutes the bot's claim. For positive inline claims, a `file:line` plus quoted excerpt. For negative or cross-file claims (missing tests, schema compatibility, migration ordering, ownership), a grep/diff/test result that proves or disproves the concern. For ownership/process questions that cannot be answered within this repo, write `"no concrete evidence available; bot's claim is about <category>"`. Not a paraphrase of reviewer text. Not a summary.
+- **Reason:** one sentence. Must reference the Code evidence concretely.
 
 ### Avoid
 
@@ -134,7 +141,9 @@ Good:
 
 | Recommendation | Use when |
 | --- | --- |
-| Fix | A code/test/docs change belongs in this PR. |
-| Defer | The concern is valid but should be tracked separately. Prepare a follow-up issue draft; do not claim it exists unless created. |
-| Reply only | No code change is needed, but the reviewer deserves a technical answer. |
-| Skip | No code change and no substantive reply beyond a concise resolution reason. |
+| Fix | A code/test/docs change belongs in this PR. Requires concrete `Code evidence` (file:line + quote, or grep/diff/test artifact). |
+| Defer | The concern is valid but should be tracked separately. Requires `Code evidence` that demonstrates the concern is real. Prepare a follow-up issue draft; do not claim it exists unless created. |
+| Reply only | The bot's specific claim does not match current code — typically a stale inline claim where the line moved or was already fixed. The reply explains the mismatch. Requires `Code evidence` that shows the mismatch (e.g., the current state of the line the bot referenced). |
+| Needs your decision | Cannot verify the bot's claim within this repo. Triggered by: cross-service ownership questions, PR-description-vs-code conflicts, missing-proof concerns that span systems, or any case where domain context the agent lacks would change the answer. `Code evidence` is `"no concrete evidence available; bot's claim is about <category>"`. |
+
+`Fix` requires concrete code evidence. If you have not located that evidence, do not pick `Fix` — pick `Defer`, `Reply only`, or `Needs your decision` based on the case. Echoing reviewer text without verifying current code is the failure mode this skill exists to prevent.

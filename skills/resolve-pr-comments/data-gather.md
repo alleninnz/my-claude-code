@@ -37,8 +37,8 @@ Use `gh` only. Do not use GitHub MCP tools for thread-aware review data.
 - **Inline comment**: a comment inside a GitHub review thread. It has `thread_id`, `is_resolved`, and `is_outdated`.
 - **PR-level comment**: a conversation comment on the PR. It has no resolved state.
 - **Review body**: the top-level body of a submitted review.
-- **Actionable comment**: feedback that maps to `Fix`, `Defer`, `Reply only`, or `Skip`.
-- **Reply-only**: no code change needed, but a GitHub reply should explain the decision.
+- **Actionable comment**: feedback that maps to `Fix`, `Defer`, `Reply only`, or `Needs your decision`.
+- **Reply only**: no code change in this PR; post a reply (concise for noise/style, fuller for substantive concerns) and resolve the thread.
 
 ## Reviewer Signal Matrix
 
@@ -127,11 +127,11 @@ Each actionable item must include:
 - `summary`
 - `problem`
 - `wants`
-- `evidence`
+- `code_evidence`: file:line + quoted code, or grep/diff/test artifact, or `"no concrete evidence available; bot's claim is about <category>"`. `Fix` requires the first two forms; paraphrasing reviewer text does not count.
 - `confidence`: High, Medium, or Low
-- `recommendation`: Fix, Defer, Reply only, or Skip
+- `recommendation`: agent's suggested action — Fix, Defer, Reply only, or Needs your decision (the user's recorded `decision` is restricted to Fix/Defer/Reply only)
 - `reason`: short rationale for the recommendation
-- `risk_if_skipped`: required for Medium/Low compact cards and any `Skip` or `Defer` recommendation
+- `risk_if_skipped`: risk of not fixing; required for Medium/Low compact cards and any `Reply only` or `Defer` recommendation
 - `original`: raw reviewer text
 - `signals`: PR-level staleness signals when applicable
 
@@ -139,4 +139,4 @@ Each actionable item must include:
 
 `thread_map[]` should map inline items to `thread_ids`, `comment_ids`, category, and planned reply intent so Step 6 can post replies and resolve only processed threads.
 
-Presentation buckets are severity-first. A Critical/Major item with a `Reply only`, `Defer`, `Skip`, or downgraded-severity recommendation must remain in `critical_major[]`; the recommendation does not move it to `reply_only[]`, `deferred[]`, or `medium_low[]`.
+Presentation buckets are severity-first. A Critical/Major item with a `Reply only`, `Defer`, `Needs your decision`, or downgraded-severity recommendation must remain in `critical_major[]`; the recommendation does not move it to `reply_only[]`, `deferred[]`, or `medium_low[]`.

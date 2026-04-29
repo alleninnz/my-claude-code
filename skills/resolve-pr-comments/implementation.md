@@ -15,9 +15,7 @@ Defer:
 
 Reply only:
 4. config.go - explain why existing default matches production config
-
-Skip:
-5. model.go - style nit conflicts with local convention
+5. model.go - style nit conflicts with local convention; concise reply
 ```
 
 ## Implementation Order
@@ -47,7 +45,7 @@ Before publishing, show:
 Choose the lane from the recorded decisions:
 
 - **Code-fix lane**: at least one processed comment was fixed with code.
-- **No-code lane**: all processed comments are `Reply only`, `Skip`, `Outdated`, `Auto-skipped`, or `Deferred` with no code changes.
+- **No-code lane**: all processed comments are `Reply only`, `Outdated`, `Auto-skipped`, or `Deferred` with no code changes.
 
 #### Code-fix lane
 
@@ -77,13 +75,13 @@ If there are no code changes, there is no commit/push gate. After decisions are 
 
 Do not ask just to reply and resolve processed threads. Ask only when a concrete publish blocker appears:
 
-- a processed comment does not have a recorded decision (`Fixed`, `Deferred`, `Reply only`, `Skip`, `Outdated`, or `Auto-skipped`);
+- a processed comment does not have a recorded outcome — either a user `decision` (`Fix`, `Defer`, or `Reply only`) or an auto-bucket assignment (`Outdated` or `Auto-skipped`). `Needs your decision` and `Review` are non-publishable: the user must convert them into one of the three terminal decisions before publish.
 - in the code-fix lane, the fix commit is not committed, not pushed, unknown, or not included in the PR head;
 - the staged diff includes new feature work or unrelated cleanup beyond the processed review-comment decisions;
 - required verification failed, or an unaccepted verification limitation remains;
 - a planned reply is no longer factual/mechanical after re-fetching PR state;
 - a deferred reply would claim a follow-up issue exists when it was not actually created;
-- a skip/reply-only decision is controversial, low-confidence, or came from a human reviewer and was not explicitly accepted;
+- a reply-only decision is controversial, low-confidence, or came from a human reviewer and was not explicitly accepted;
 - re-fetching threads shows the target thread changed in a way that makes the planned reply stale;
 - GitHub API writes partially fail and retrying could duplicate replies.
 

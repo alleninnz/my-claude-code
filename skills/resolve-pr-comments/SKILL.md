@@ -31,9 +31,12 @@ Work through unresolved PR review feedback with thread-aware data, independent a
 - **Inline comment**: review-thread comment with `thread_id`, `is_resolved`, and `is_outdated`.
 - **PR-level comment**: conversation comment with no resolved state.
 - **Review body**: top-level body from a submitted review.
-- **Actionable**: maps to `Fix`, `Defer`, `Reply only`, or `Skip`.
+- **Actionable**: a comment for which the agent must produce a `recommendation` and the user must record a `decision`.
+- **Recommendation** (agent output, 4 values): `Fix`, `Defer`, `Reply only`, `Needs your decision`. Displayed on the card.
+- **Decision** (user choice, 3 values): `Fix`, `Defer`, `Reply only`. The publishable terminal actions. `Needs your decision` is NOT a valid decision.
 - **Defer**: valid concern, not fixed in this PR; prepare a follow-up issue draft or tracking note.
-- **Reply only**: no code change, but GitHub reply should explain the decision.
+- **Reply only**: no code change in this PR; post a reply (concise for noise/style, fuller for substantive concerns) and resolve the thread.
+- **Needs your decision**: agent-side recommendation signal — agent cannot verify the bot's claim within this repo (cross-service ownership, PR-description-vs-code conflict, missing-proof concerns spanning systems, or any case where the agent lacks the domain context to judge). The user must convert it into `Fix`, `Defer`, or `Reply only` before the workflow advances.
 
 ## Step 1 - Fetch and Classify
 
@@ -58,7 +61,7 @@ Read `data-gather.md` and `data-contract.md`, then classify the raw JSON into:
 - `deferred[]`
 - `thread_map[]`
 
-Severity controls presentation. Include reviewer-labeled Critical/Major/High/P0/P1 items in `critical_major[]` unless they are resolved, outdated, or pure bot noise. Do not move a Critical/Major item into `reply_only[]`, `deferred[]`, or `medium_low[]` just because its recommendation is `Reply only`, `Defer`, `Skip`, or a downgraded severity; keep it in `critical_major[]` so Step 3 presents it one item at a time.
+Severity controls presentation. Include reviewer-labeled Critical/Major/High/P0/P1 items in `critical_major[]` unless they are resolved, outdated, or pure bot noise. Do not move a Critical/Major item into `reply_only[]`, `deferred[]`, or `medium_low[]` just because its recommendation is `Reply only`, `Defer`, `Needs your decision`, or a downgraded severity; keep it in `critical_major[]` so Step 3 presents it one item at a time.
 
 If the script cannot run, use the fallback fetch rules in `data-gather.md`.
 
@@ -88,7 +91,9 @@ After the count summary, immediately proceed to Step 3 if there are Critical/Maj
 
 Read `deep-analysis.md` and `interaction.md`. Present exactly one deduplicated Critical/Major item at a time using the detailed card and choices from `interaction.md`.
 
-Hard rule: every Critical/Major item requires an explicit user decision before moving on. Even when the recommendation is clearly `Reply only` or `Skip`, present the card, state the recommendation, ask for a decision, and stop. Do not batch Critical/Major items, ask for decisions on multiple Critical/Major items at once, or advance to the next Critical/Major item without a recorded decision for the current one.
+Hard rule: every Critical/Major item requires an explicit user decision before moving on. Even when the recommendation is clearly `Reply only` or `Needs your decision`, present the card, state the recommendation, ask for a decision, and stop. Do not batch Critical/Major items, ask for decisions on multiple Critical/Major items at once, or advance to the next Critical/Major item without a recorded decision for the current one.
+
+Critical/Major items must go through deep analysis per `deep-analysis.md`: read the focused diff, the surrounding function/method, repo conventions (`CLAUDE.md`/`AGENTS.md`/lints/peer code), and PR description for PR-level items. The presentation card must include concrete `Code evidence` — a `file:line` quote, a grep/diff/test artifact, or an explicit `"no concrete evidence available; bot's claim is about <category>"` note. The one rule: `Fix` requires concrete code evidence; without it, pick `Defer`, `Reply only`, or `Needs your decision` based on the case. Do not invent or paraphrase evidence to justify `Fix`.
 
 If deep analysis downgrades a Critical/Major item below Major, keep it in the current Step 3 flow, show the downgraded severity in the card, and still ask for the user decision before moving on. Do not silently move it to Step 4 after it has entered Critical/Major review.
 
@@ -108,7 +113,8 @@ Read `implementation.md` and `resolve-threads.md`. Follow the publish lanes ther
 
 ## Common Mistakes
 
-- Before presenting each comment: include Evidence, Confidence, Reason, and current-code analysis; do not echo reviewer text as analysis.
+- Before presenting each Critical/Major comment: include Code evidence, Confidence, Recommendation, Reason; do not echo reviewer text as analysis. `Fix` requires concrete `Code evidence`; without it, pick `Defer`/`Reply only`/`Needs your decision` based on the case.
+- Before presenting each Medium/Low comment: include Code evidence (file:line + quote, grep/diff/test artifact, or explicit `"no concrete evidence available"` note); do not paraphrase reviewer text as evidence.
 - For Critical/Major items: never summarize the whole review into one decision request; show one deduplicated item, ask for that item only, and stop.
 - Before fixing: every actionable comment must have a recorded decision or an explicitly accepted Medium/Low default; do not merge comments with different requested actions.
 - Before publishing: show diff preview and verification results; post replies before resolving threads; do not run another CodeRabbit review or ask for another publish confirmation inside this skill; never claim a deferred follow-up exists unless it was created.
