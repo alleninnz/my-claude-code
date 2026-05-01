@@ -36,7 +36,7 @@ codex plugin marketplace upgrade my-claude-codex
 | `go-simplify` | Simplify Go code while preserving behavior; shared Claude Code/Codex skill |
 | `mysql-aurora-playbook` | MySQL 8.0 & Aurora MySQL 3 patterns — indexes, types, queries, DDL, monitoring |
 | `opsx-prompt` | Generate ticket-first `opsx:new` prompts from Linear issues, with optional deeper review |
-| `implementation-discipline` | Supervise implementation against specs, prefer TDD when it fits, and checkpoint review-worthy risk boundaries |
+| `pause-for-review` | Decision boundaries where agents stop code generation for user review — direction, contract, reversibility, discovery, slice-complete — with a pause-output template |
 
 ## License
 
